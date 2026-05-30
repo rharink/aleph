@@ -1,0 +1,24 @@
+[package]
+name        = "aleph-container"
+description = "DNG/TIFF container read and write — no codec logic"
+publish     = false
+version.workspace    = true
+edition.workspace    = true
+authors.workspace    = true
+license.workspace    = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+thiserror = { workspace = true }
+memmap2   = { workspace = true }
+
+[dev-dependencies]
+proptest  = { workspace = true }
+criterion = { workspace = true }
+
+[[bench]]
+name    = "container_read"
+harness = false

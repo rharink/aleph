@@ -1,0 +1,17 @@
+[package]
+name        = "aleph"
+description = "Aleph CLI — near-lossless RAW compressor"
+publish     = false
+version.workspace    = true
+edition.workspace    = true
+authors.workspace    = true
+license.workspace    = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+aleph-orchestration = { workspace = true }
+clap                = { workspace = true }
+miette              = { workspace = true }

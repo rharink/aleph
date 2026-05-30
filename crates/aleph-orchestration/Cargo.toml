@@ -1,0 +1,28 @@
+[package]
+name        = "aleph-orchestration"
+description = "Frame enumeration, parallel job execution, checksum generation, offload planning"
+publish     = false
+version.workspace    = true
+edition.workspace    = true
+authors.workspace    = true
+license.workspace    = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+aleph-codec     = { workspace = true }
+aleph-container = { workspace = true }
+aleph-metadata  = { workspace = true }
+rayon           = { workspace = true }
+blake3          = { workspace = true }
+thiserror       = { workspace = true }
+
+[dev-dependencies]
+proptest  = { workspace = true }
+criterion = { workspace = true }
+
+[[bench]]
+name    = "orchestration_parallel"
+harness = false

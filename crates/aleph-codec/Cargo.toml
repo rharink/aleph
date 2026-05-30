@@ -1,0 +1,23 @@
+[package]
+name    = "aleph-codec"
+description = "Lossless codec implementations (lossless JPEG, future codecs)"
+publish = false
+version.workspace    = true
+edition.workspace    = true
+authors.workspace    = true
+license.workspace    = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+thiserror = { workspace = true }
+
+[dev-dependencies]
+proptest  = { workspace = true }
+criterion = { workspace = true }
+
+[[bench]]
+name    = "codec_lossless"
+harness = false

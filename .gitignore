@@ -1,0 +1,33 @@
+# Nix
+.direnv/
+result
+
+# Rust
+target/
+**/*.rs.bk
+
+# Coverage
+lcov.info
+coverage_html/
+target/llvm-cov/
+
+# Criterion output
+target/criterion/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+
+# Environment
+.env
+.env.local
+
+# Claude
+.claude/*.local.*
+.claude/worktrees/
