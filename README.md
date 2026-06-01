@@ -61,6 +61,7 @@ crates/
   aleph-orchestration/  parallel job execution, checksums, offload
 apps/
   cli/                  aleph binary
+  website/              marketing site (SvelteKit + Motion)
   gui/                  desktop GUI (future)
 proof/                  Lean 4 / Alloy formal specs
 ```

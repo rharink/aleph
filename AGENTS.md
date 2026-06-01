@@ -84,10 +84,13 @@ aleph/
 │   └── aleph-orchestration/    # frame enumeration, rayon parallelism, checksums
 ├── apps/
 │   ├── cli/                    # `aleph` binary — thin clap shell over orchestration
+│   ├── website/                # marketing/landing site (SvelteKit + Motion, static)
 │   └── gui/                    # future GUI (Tauri or egui, TBD)
 ├── benches/                    # workspace-level benchmarks (per-crate benches live in crates/)
 └── proof/                      # Lean 4 / Alloy formal specs
 ```
+
+`apps/website/` is a standalone SvelteKit app (pnpm, not a Cargo workspace member). It uses Motion (motion.dev) — the framework-agnostic engine behind Framer Motion — for animation, and builds to fully prerendered static output via `adapter-static`. Drive it with the `web-*` Just recipes or `pnpm` inside the directory.
 
 ## Architecture
 

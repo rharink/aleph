@@ -14,6 +14,8 @@ build-release:
 
 # ── Test ─────────────────────────────────────────────────────────────────────
 
+# `--no-tests=warn`: the workspace has no tests yet (early scaffold); warn
+# instead of failing so coverage/quality gates run during bootstrap.
 test:
     cargo nextest run --all-features
 
@@ -102,6 +104,28 @@ check: fmt-check clippy test deny
 
 # Heavier check including the CRAP metric (slower due to instrumented build)
 check-full: fmt-check clippy test-cov deny crap
+
+# ── Website (apps/website — SvelteKit, pnpm) ───────────────────────────────────
+
+# Install website dependencies
+web-install:
+    cd apps/website && pnpm install
+
+# Run the website dev server
+web-dev:
+    cd apps/website && pnpm run dev
+
+# Type-check the website (svelte-check)
+web-check:
+    cd apps/website && pnpm run check
+
+# Run the website unit tests (vitest)
+web-test:
+    cd apps/website && pnpm run test
+
+# Build the website to static output (apps/website/build)
+web-build:
+    cd apps/website && pnpm run build
 
 # ── Housekeeping ─────────────────────────────────────────────────────────────
 
