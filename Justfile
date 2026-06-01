@@ -71,6 +71,10 @@ bench-save name:
 bench-cmp name:
     cargo bench {{ bench_targets }} -- --baseline {{ name }}
 
+# Smoke-test benchmarks: build and run each once, no measurement (used by CI).
+bench-check:
+    cargo bench {{ bench_targets }} -- --test
+
 # ── Composite ────────────────────────────────────────────────────────────────
 
 # Full local quality gate — run before pushing

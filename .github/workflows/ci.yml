@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Cancel superseded runs on the same ref.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  ci:
+    name: fmt · clippy · test · deny · bench · crap
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (with LFS fixtures)
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      # rustup reads rust-toolchain.toml, so the channel (1.95.0) and its
+      # components (rustfmt, clippy, ...) match local development exactly.
+      - name: Install pinned Rust toolchain
+        run: rustup show
+
+      - name: Cache cargo registry and build artifacts
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install just, nextest, cargo-deny, cargo-llvm-cov
+        uses: taiki-e/install-action@v2
+        with:
+          tool: just,nextest,cargo-deny,cargo-llvm-cov
+
+      # cargo-crap is not in taiki-e's prebuilt set; install from crates.io,
+      # pinned so its CLI cannot drift under us.
+      - name: Install cargo-crap
+        run: cargo install cargo-crap@0.2.1 --locked
+
+      - name: Check formatting
+        run: just fmt-check
+
+      - name: Lint
+        run: just clippy
+
+      - name: Test
+        run: just test
+
+      # License and advisory policy (deny.toml). Fetches the RustSec DB.
+      - name: Dependency policy
+        run: just deny
+
+      # Build every benchmark and run each once (criterion --test). Catches
+      # broken benches without spending CI time on measurement.
+      - name: Benchmarks (smoke)
+        run: just bench-check
+
+      # CRAP metric (complexity x coverage). Runs instrumented coverage first,
+      # which needs the llvm-tools-preview component (from rust-toolchain.toml).
+      - name: CRAP metric
+        run: just crap

@@ -1,0 +1,43 @@
+# cargo-deny policy — license and vulnerability enforcement.
+# Docs: https://embarkstudios.github.io/cargo-deny/
+
+[advisories]
+version = 2
+# RustSec advisory DB is fetched at check time (CI has network). In v2 every
+# advisory class (vulnerability / unmaintained / unsound / yanked) denies by
+# default; add IDs to `ignore` only with a justification.
+yanked = "deny"
+ignore = []
+
+[licenses]
+version = 2
+# Proprietary product: permissive licenses only, no copyleft. Anything not on
+# this list is denied by default, which is what enforces the no-copyleft policy.
+# This is the exact set present in the dependency graph (cargo deny list); a new
+# dependency with a new license will fail CI on purpose, prompting review.
+allow = [
+    "0BSD",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "CC0-1.0",
+    "ISC",
+    "MIT",
+    "MIT-0",
+    "Unicode-3.0",
+    "Unlicense",
+    "Zlib",
+]
+# Our own crates are `UNLICENSED` (proprietary) and `publish = false`; skip them.
+private = { ignore = true }
+
+[bans]
+multiple-versions = "warn"
+wildcards = "deny"
+# Internal workspace crates are path deps with no version req; that is not a
+# crates.io wildcard, so don't flag it.
+allow-wildcard-paths = true
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
