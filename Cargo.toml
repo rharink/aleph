@@ -37,9 +37,6 @@ clap = { version = "4", features = ["derive"] }
 # Checksums
 blake3 = "1"
 
-# I/O
-memmap2 = "0.9"
-
 # Testing
 proptest = "1"
 criterion = { version = "0.5", features = ["html_reports"] }

@@ -31,3 +31,9 @@ target/criterion/
 # Claude
 .claude/*.local.*
 .claude/worktrees/
+
+# Tests
+testing/
+
+# worktrees
+.worktrees/

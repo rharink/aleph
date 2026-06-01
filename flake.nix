@@ -34,6 +34,9 @@
 
           # DX
           just
+
+          # Metadata inspection — verify EXIF/RAW tags in compressed files
+          exiftool
         ];
 
         # Not in nixpkgs / marked broken — install once with cargo install:

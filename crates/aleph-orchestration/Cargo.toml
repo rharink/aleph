@@ -15,9 +15,18 @@ workspace = true
 aleph-codec     = { workspace = true }
 aleph-container = { workspace = true }
 aleph-metadata  = { workspace = true }
-rayon           = { workspace = true }
-blake3          = { workspace = true }
 thiserror       = { workspace = true }
+
+# Native-only: threads + checksums for multi-frame pipeline and offload. Gated so
+# the pure compress/decompress/verify core stays portable (e.g. wasm32).
+rayon  = { workspace = true, optional = true }
+blake3 = { workspace = true, optional = true }
+
+[features]
+default = ["native"]
+# Filesystem + parallel pipeline + offload. Disable for no-std-ish / wasm targets
+# to keep only the in-memory codec/container/metadata core.
+native = ["dep:rayon", "dep:blake3"]
 
 [dev-dependencies]
 proptest  = { workspace = true }
