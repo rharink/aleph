@@ -38,18 +38,38 @@ clippy:
 deny:
     cargo deny check
 
-# CRAP metric — requires coverage data; runs test-cov first
+# CRAP metric (complexity x coverage) for production code — runs test-cov first.
+# tests/ and benches/ are excluded: they carry no LCOV entries, so scoring them
+# would pin every helper at 0% coverage and produce false positives.
 crap: test-cov
-    cargo crap --lcov lcov.info --fail-above 30
+    cargo crap --workspace --lcov lcov.info --threshold 30 --fail-above --exclude 'tests/**' --exclude 'benches/**'
 
 # ── Benchmarks ───────────────────────────────────────────────────────────────
+# Driven via `cargo bench` (criterion). cargo-criterion is an optional nicer
+# runner but is not required and is absent from the dev shell.
+#
+# Bench targets are listed explicitly: `cargo bench --benches` would also invoke
+# the libtest harnesses of the lib/bin/test targets, which reject criterion's
+# --save-baseline/--baseline flags. Add new benches here.
+bench_targets := "--bench codec_lossless --bench container_read --bench orchestration_parallel"
 
+# Run every criterion benchmark.
 bench:
-    cargo criterion
+    cargo bench {{ bench_targets }}
 
-# Run a single benchmark by name fragment, e.g.: just bench-one codec_lossless
+# Run a single benchmark target, e.g.: just bench-one codec_lossless
 bench-one name:
-    cargo criterion --bench {{ name }}
+    cargo bench --bench {{ name }}
+
+# Snapshot current performance under a named baseline — run BEFORE a change.
+# e.g.: just bench-save before
+bench-save name:
+    cargo bench {{ bench_targets }} -- --save-baseline {{ name }}
+
+# Re-run benchmarks and report deltas against a saved baseline — run AFTER a
+# change. e.g.: just bench-cmp before
+bench-cmp name:
+    cargo bench {{ bench_targets }} -- --baseline {{ name }}
 
 # ── Composite ────────────────────────────────────────────────────────────────
 

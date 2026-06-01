@@ -312,6 +312,7 @@ mod tests {
     use super::compress_dng;
     use super::decompress_dng;
     use crate::error::OrchestrationError;
+    use crate::sample::pack;
     use aleph_container::Dng;
     use aleph_container::Endian;
     use aleph_container::Entry;
@@ -319,6 +320,13 @@ mod tests {
     use aleph_container::Image;
     use aleph_container::Layout;
     use aleph_container::Value;
+    use proptest::collection::vec as prop_vec;
+    use proptest::prelude::any;
+    use proptest::prelude::Just;
+    use proptest::prelude::Strategy;
+    use proptest::prop_assert_eq;
+    use proptest::prop_oneof;
+    use proptest::proptest;
 
     fn raw_ifd(
         endian: Endian,
@@ -632,5 +640,76 @@ mod tests {
         };
         let restored = decompress_dng(&dng).unwrap();
         assert_eq!(restored, dng);
+    }
+
+    // Smallest width multiple keeping a row byte-aligned for sub-byte depths, so
+    // packing is exactly reversible (mirrors compress's row-alignment guard).
+    fn row_align_unit(spp: u16, precision: u8) -> u32 {
+        let mut a = u32::from(spp) * u32::from(precision);
+        let mut b = 8u32;
+        while b != 0 {
+            (a, b) = (b, a % b);
+        }
+        8 / a
+    }
+
+    fn arb_supported_raw_dng() -> impl Strategy<Value = Dng> {
+        let endian = prop_oneof![Just(Endian::Little), Just(Endian::Big)];
+        let precision = prop_oneof![Just(8u8), Just(10u8), Just(12u8), Just(14u8), Just(16u8)];
+        (endian, precision, 1u16..=4, 1u32..=6, 1u32..=4)
+            .prop_flat_map(|(endian, precision, spp, height, width_base)| {
+                let width = width_base * row_align_unit(spp, precision);
+                let count = usize::try_from(width * height * u32::from(spp)).expect("small count");
+                let max = (1u32 << precision) - 1;
+                (
+                    Just((endian, precision, spp, width, height)),
+                    prop_vec(0u32..=max, count),
+                    prop_vec(any::<u8>(), 0..4),
+                )
+            })
+            .prop_map(|((endian, precision, spp, width, height), raw, trailing)| {
+                let samples: Vec<u16> = raw
+                    .into_iter()
+                    .map(|s| u16::try_from(s).expect("<= u16::MAX"))
+                    .collect();
+                let mut segment = pack(&samples, precision, endian).expect("supported depth");
+                segment.extend_from_slice(&trailing);
+                let ifd = raw_ifd(
+                    endian,
+                    width,
+                    height,
+                    u16::from(precision),
+                    spp,
+                    Layout::Strips {
+                        rows_per_strip: height,
+                    },
+                    vec![segment],
+                );
+                Dng {
+                    endian,
+                    ifds: vec![ifd],
+                }
+            })
+    }
+
+    proptest! {
+        // The headline lossless invariant from AGENTS.md, across every supported
+        // depth, component count, endianness, and trailing padding: a frame taken
+        // through compress then decompress — including container serialization —
+        // is byte-for-byte the original.
+        #[test]
+        fn full_pipeline_round_trips_byte_exact(dng in arb_supported_raw_dng()) {
+            let original = aleph_container::write(&dng).expect("write raw");
+            let parsed = aleph_container::read(&original).expect("read raw");
+
+            let compressed = compress_dng(&parsed).expect("compress");
+            prop_assert_eq!(compressed.ifds[0].get(259), Some(&Value::Short(vec![7])));
+            prop_assert_eq!(decompress_dng(&compressed).expect("decompress"), parsed);
+
+            let comp_bytes = aleph_container::write(&compressed).expect("write compressed");
+            let reparsed = aleph_container::read(&comp_bytes).expect("read compressed");
+            let restored = decompress_dng(&reparsed).expect("decompress reparsed");
+            prop_assert_eq!(aleph_container::write(&restored).expect("write restored"), original);
+        }
     }
 }

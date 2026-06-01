@@ -287,6 +287,9 @@ mod tests {
     use super::decode;
     use crate::encode::encode;
     use crate::encode::Frame;
+    use proptest::collection::vec;
+    use proptest::prelude::any;
+    use proptest::proptest;
 
     #[test]
     fn rejects_empty() {
@@ -368,5 +371,26 @@ mod tests {
         let mut bytes = sample_stream();
         bytes.extend_from_slice(&[0x00, 0x00, 0xDE, 0xAD]);
         assert!(decode(&bytes).is_ok());
+    }
+
+    proptest! {
+        // The decoder's documented contract: never panic on adversarial input,
+        // only return Err. Most random bytes bounce off the SOI/marker checks.
+        #[test]
+        fn decode_never_panics_on_arbitrary_bytes(data in vec(any::<u8>(), 0..4096)) {
+            let _ = decode(&data);
+        }
+
+        // Flipping bytes of a valid stream drives malformed data deep into the
+        // entropy decoder — paths arbitrary bytes never reach.
+        #[test]
+        fn decode_never_panics_on_flipped_stream(flips in vec(any::<usize>(), 0..32)) {
+            let mut bytes = sample_stream();
+            let len = bytes.len();
+            for f in flips {
+                bytes[f % len] ^= 0xFF;
+            }
+            let _ = decode(&bytes);
+        }
     }
 }

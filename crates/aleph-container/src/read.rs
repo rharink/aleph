@@ -300,6 +300,9 @@ mod tests {
     use crate::error::ContainerError;
     use crate::value::Endian;
     use crate::value::Value;
+    use proptest::collection::vec;
+    use proptest::prelude::any;
+    use proptest::proptest;
 
     #[test]
     fn parses_hand_crafted_minimal_little_endian_tiff() {
@@ -371,5 +374,22 @@ mod tests {
             read(&bytes),
             Err(ContainerError::Truncated { .. })
         ));
+    }
+
+    proptest! {
+        // The reader must reject malformed input with an error, never panic.
+        #[test]
+        fn read_never_panics_on_arbitrary_bytes(data in vec(any::<u8>(), 0..4096)) {
+            let _ = read(&data);
+        }
+
+        // A valid little-endian header routes arbitrary bytes straight into the
+        // IFD parser, fuzzing its entry-count, type, and offset bounds handling.
+        #[test]
+        fn read_never_panics_behind_valid_header(tail in vec(any::<u8>(), 0..4096)) {
+            let mut bytes = vec![0x49, 0x49, 0x2A, 0x00, 0x08, 0x00, 0x00, 0x00];
+            bytes.extend_from_slice(&tail);
+            let _ = read(&bytes);
+        }
     }
 }
