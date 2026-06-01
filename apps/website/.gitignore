@@ -11,6 +11,9 @@ node_modules
 # Heavy source footage masters — web-encoded derivatives live in static/media/
 /media-src
 
+# Generated WASM codec package (build with `just web-wasm`)
+/src/lib/wasm
+
 # OS
 .DS_Store
 Thumbs.db

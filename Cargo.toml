@@ -2,6 +2,7 @@
 members = [
     "crates/aleph-codec",
     "crates/aleph-container",
+    "crates/aleph-develop",
     "crates/aleph-metadata",
     "crates/aleph-orchestration",
     "crates/aleph-wasm",
@@ -22,6 +23,7 @@ repository = "https://github.com/rharink/aleph"
 # Internal crates
 aleph-codec         = { path = "crates/aleph-codec" }
 aleph-container     = { path = "crates/aleph-container" }
+aleph-develop       = { path = "crates/aleph-develop" }
 aleph-metadata      = { path = "crates/aleph-metadata" }
 aleph-orchestration = { path = "crates/aleph-orchestration" }
 

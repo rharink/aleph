@@ -19,6 +19,7 @@ mod pipeline;
 pub use compress::compress_dng;
 pub use compress::decompress_dng;
 pub use error::OrchestrationError;
+pub use sample::unpack;
 pub use verify::verify_compressed;
 pub use verify::verify_roundtrip;
 

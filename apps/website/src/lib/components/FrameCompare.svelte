@@ -1,38 +1,30 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { prefersReducedMotion } from '$lib/motion';
 
 	interface Props {
-		webm: string;
-		mp4: string;
-		poster: string;
-		ratio?: string;
+		/** Object URL of the frame (decoded original, or embedded preview). */
+		src: string;
+		/** Optional second decode (the Aleph round-trip) clipped to the right half. */
+		srcRight?: string | null;
+		/** Size reduction (%) once compressed; null before. */
+		reduction?: number | null;
+		/** Round-trip verified bit-perfect. */
+		verified?: boolean | null;
 		zoom?: number;
-		/** Representative lossless size reduction (%). Illustrative until the codec lands. */
-		reduction?: number;
 	}
 
-	// Both panes play the same footage because Aleph is lossless — "Original" and
-	// "Aleph round-trip" are identical. A pointer loupe magnifies the footage so
-	// you can scrutinise any detail (including the exact seam) and confirm there's
-	// no difference. Illustration today; a real round-trip ships with the codec.
-	let { webm, mp4, poster, ratio = '16 / 9', zoom = 2, reduction = 60 }: Props = $props();
+	let { src, srcRight = null, reduction = null, verified = null, zoom = 2.5 }: Props = $props();
 
-	const LOUPE = 150; // css px (square)
+	const LOUPE = 150;
 
 	let stage = $state<HTMLElement>();
-	let base = $state<HTMLVideoElement>();
-	let top = $state<HTMLVideoElement>();
+	let img = $state<HTMLImageElement>();
 	let loupeEl = $state<HTMLDivElement>();
 	let canvas = $state<HTMLCanvasElement>();
-
 	let visible = $state(false);
-	let interactive = $state(false);
-	let dpr = 1;
-	let raf = 0;
-	let ptr = { x: 0, y: 0 };
 	let pos = $state(50);
 	let dragging = false;
+	let dpr = 1;
 
 	onMount(() => {
 		if (canvas) {
@@ -40,35 +32,48 @@
 			canvas.width = LOUPE * dpr;
 			canvas.height = LOUPE * dpr;
 		}
-
-		interactive = !prefersReducedMotion();
-		if (!interactive) return;
-
-		const play = () => {
-			base?.play().catch(() => {});
-			top?.play().catch(() => {});
-		};
-		play();
-
-		const io = new IntersectionObserver(
-			(entries) => {
-				for (const entry of entries) {
-					if (entry.isIntersecting) play();
-					else {
-						base?.pause();
-						top?.pause();
-					}
-				}
-			},
-			{ threshold: 0.1 }
-		);
-		if (stage) io.observe(stage);
-
-		return () => {
-			io.disconnect();
-			cancelAnimationFrame(raf);
-		};
 	});
+
+	function draw(px: number, py: number) {
+		const el = stage;
+		const im = canvas;
+		if (!el || !im || !img || !img.complete || !img.naturalWidth) return;
+		const rect = el.getBoundingClientRect();
+		const scale = rect.width / img.naturalWidth; // height:auto preserves aspect
+		const half = LOUPE / 2;
+		const boxX = Math.max(0, Math.min(rect.width - LOUPE, px - half));
+		const boxY = Math.max(0, Math.min(rect.height - LOUPE, py - half));
+		if (loupeEl) loupeEl.style.transform = `translate(${boxX}px, ${boxY}px)`;
+
+		const region = LOUPE / zoom / scale;
+		let srcX = (boxX + half) / scale;
+		let srcY = (boxY + half) / scale;
+		srcX = Math.max(region / 2, Math.min(img.naturalWidth - region / 2, srcX));
+		srcY = Math.max(region / 2, Math.min(img.naturalHeight - region / 2, srcY));
+
+		const ctx = im.getContext('2d');
+		if (!ctx) return;
+		ctx.clearRect(0, 0, im.width, im.height);
+		ctx.drawImage(
+			img,
+			srcX - region / 2,
+			srcY - region / 2,
+			region,
+			region,
+			0,
+			0,
+			im.width,
+			im.height
+		);
+
+		// Mark the seam if the draggable divider falls inside the loupe.
+		const seamSrc = (rect.width * pos) / 100 / scale;
+		if (seamSrc > srcX - region / 2 && seamSrc < srcX + region / 2) {
+			const lineX = ((seamSrc - (srcX - region / 2)) / region) * im.width;
+			ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+			ctx.fillRect(lineX - dpr / 2, 0, dpr, im.height);
+		}
+	}
 
 	function setPos(clientX: number) {
 		if (!stage) return;
@@ -79,7 +84,6 @@
 	function onPointerDown(event: PointerEvent) {
 		dragging = true;
 		visible = false; // hide the loupe while sliding the divider
-		cancelAnimationFrame(raf);
 		setPos(event.clientX);
 		try {
 			stage?.setPointerCapture(event.pointerId);
@@ -94,23 +98,17 @@
 			setPos(event.clientX);
 			return;
 		}
-		if (!interactive) return;
 		const rect = stage.getBoundingClientRect();
-		ptr = { x: event.clientX - rect.left, y: event.clientY - rect.top };
-		if (!visible) {
-			visible = true;
-			raf = requestAnimationFrame(draw);
-		}
+		visible = true;
+		draw(event.clientX - rect.left, event.clientY - rect.top);
 	}
 
 	function endDrag() {
 		dragging = false;
 	}
-
 	function leave() {
 		dragging = false;
 		visible = false;
-		cancelAnimationFrame(raf);
 	}
 
 	function onKey(event: KeyboardEvent) {
@@ -121,67 +119,11 @@
 		else return;
 		event.preventDefault();
 	}
-
-	function draw() {
-		const v = base;
-		const c = canvas;
-		if (stage && v && c && v.readyState >= 2 && v.videoWidth) {
-			const rect = stage.getBoundingClientRect();
-			const sw_ = rect.width;
-			const sh_ = rect.height;
-			const vw = v.videoWidth;
-			const vh = v.videoHeight;
-
-			const cover = Math.max(sw_ / vw, sh_ / vh);
-			const offX = (vw * cover - sw_) / 2;
-			const offY = (vh * cover - sh_) / 2;
-
-			const half = LOUPE / 2;
-			const boxX = Math.max(0, Math.min(sw_ - LOUPE, ptr.x - half));
-			const boxY = Math.max(0, Math.min(sh_ - LOUPE, ptr.y - half));
-			if (loupeEl) loupeEl.style.transform = `translate(${boxX}px, ${boxY}px)`;
-
-			// Source region under the loupe box, magnified by `zoom`.
-			const region = LOUPE / zoom / cover;
-			let srcX = (boxX + half + offX) / cover;
-			let srcY = (boxY + half + offY) / cover;
-			srcX = Math.max(region / 2, Math.min(vw - region / 2, srcX));
-			srcY = Math.max(region / 2, Math.min(vh - region / 2, srcY));
-
-			const ctx = c.getContext('2d');
-			if (ctx) {
-				ctx.clearRect(0, 0, c.width, c.height);
-				ctx.drawImage(
-					v,
-					srcX - region / 2,
-					srcY - region / 2,
-					region,
-					region,
-					0,
-					0,
-					c.width,
-					c.height
-				);
-
-				// Mark the center seam if it falls inside the loupe — zoom the exact
-				// Original | Aleph boundary and it's still continuous.
-				const seamSrc = ((sw_ * pos) / 100 + offX) / cover;
-				if (seamSrc > srcX - region / 2 && seamSrc < srcX + region / 2) {
-					const lineX = ((seamSrc - (srcX - region / 2)) / region) * c.width;
-					ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
-					ctx.fillRect(lineX - dpr / 2, 0, dpr, c.height);
-				}
-			}
-		}
-		if (visible) raf = requestAnimationFrame(draw);
-	}
 </script>
 
 <div
-	class="compare"
-	class:interactive
+	class="fcompare"
 	bind:this={stage}
-	style="aspect-ratio: {ratio};"
 	role="slider"
 	tabindex="0"
 	aria-label="Drag to reveal the Aleph round-trip"
@@ -195,42 +137,28 @@
 	onpointercancel={leave}
 	onkeydown={onKey}
 >
-	<video
-		bind:this={base}
-		class="layer"
-		{poster}
-		muted
-		loop
-		playsinline
-		preload="auto"
-		aria-hidden="true"
-	>
-		<source src={webm} type="video/webm" />
-		<source src={mp4} type="video/mp4" />
-	</video>
-	<video
-		bind:this={top}
-		class="layer clip"
-		style="clip-path: inset(0 {100 - pos}% 0 0);"
-		{poster}
-		muted
-		loop
-		playsinline
-		preload="auto"
-		aria-hidden="true"
-	>
-		<source src={webm} type="video/webm" />
-		<source src={mp4} type="video/mp4" />
-	</video>
+	<img bind:this={img} {src} alt="Decoded original frame" decoding="async" draggable="false" />
+	{#if srcRight}
+		<img
+			class="right"
+			src={srcRight}
+			style="clip-path: inset(0 0 0 {pos}%);"
+			alt="Decoded Aleph round-trip"
+			decoding="async"
+			draggable="false"
+		/>
+	{/if}
 
 	<span class="tag tl mono">Original</span>
 	<span class="tag tr mono">
-		Aleph round-trip
-		<span class="pct">−{reduction}% file size</span>
+		Aleph round-trip{#if reduction !== null}<span class="pct"> −{reduction}%</span>{/if}
 	</span>
 	<div class="divider" style="left: {pos}%;"></div>
 	<div class="handle" style="left: {pos}%;" aria-hidden="true"><span>⟷</span></div>
-	<span class="badge mono">0 px changed · identical</span>
+	<span class="badge mono">
+		{#if verified === true}verified ✓ · 0 px changed{:else if verified === false}not verified{:else}embedded
+			preview{/if}
+	</span>
 
 	<div
 		class="loupe"
@@ -244,29 +172,35 @@
 </div>
 
 <style>
-	.compare {
+	.fcompare {
 		position: relative;
-		width: 100%;
 		margin: 0;
+		width: 100%;
 		overflow: hidden;
 		border-radius: var(--radius);
 		border: 1px solid var(--line);
 		background: var(--bg-2);
-		touch-action: none;
 		cursor: ew-resize;
+		touch-action: none;
+		line-height: 0;
+		user-select: none;
+		-webkit-user-select: none;
 	}
 
-	.layer {
+	img {
+		display: block;
+		width: 100%;
+		height: auto;
+		-webkit-user-drag: none;
+		user-select: none;
+	}
+
+	/* Second decode (the Aleph round-trip); clipped to the right of the divider. */
+	.right {
 		position: absolute;
 		inset: 0;
 		width: 100%;
 		height: 100%;
-		object-fit: cover;
-	}
-
-	.layer.clip {
-		/* clip-path set inline by the divider position */
-		clip-path: inset(0 50% 0 0);
 	}
 
 	.divider {
@@ -301,10 +235,11 @@
 
 	.tag {
 		position: absolute;
-		top: 14px;
+		top: 12px;
 		font-size: 0.58rem;
 		letter-spacing: 0.16em;
 		text-transform: uppercase;
+		line-height: 1.3;
 		color: var(--ink);
 		background: color-mix(in srgb, var(--bg) 60%, transparent);
 		backdrop-filter: blur(6px);
@@ -313,29 +248,24 @@
 		pointer-events: none;
 	}
 	.tl {
-		left: 14px;
+		left: 12px;
 	}
 	.tr {
-		right: 14px;
+		right: 12px;
 		text-align: right;
 	}
-
 	.pct {
-		display: block;
-		margin-top: 0.25em;
-		font-size: 0.74rem;
-		letter-spacing: 0;
-		text-transform: none;
 		font-variant-numeric: tabular-nums;
 		font-weight: 600;
 	}
 
 	.badge {
 		position: absolute;
-		bottom: 14px;
+		bottom: 12px;
 		left: 50%;
 		transform: translateX(-50%);
-		font-size: 0.62rem;
+		font-size: 0.6rem;
+		line-height: 1.3;
 		color: var(--ink);
 		background: color-mix(in srgb, var(--bg) 60%, transparent);
 		backdrop-filter: blur(6px);
@@ -359,34 +289,25 @@
 		transition: opacity 0.12s ease;
 		will-change: transform;
 	}
-
 	.loupe.show {
 		opacity: 1;
 	}
-
 	canvas {
 		display: block;
 		width: 100%;
 		height: 100%;
 	}
-
 	.loupe-tag {
 		position: absolute;
 		bottom: 5px;
 		left: 50%;
 		transform: translateX(-50%);
-		font-size: 0.58rem;
-		letter-spacing: 0.1em;
+		font-size: 0.55rem;
+		letter-spacing: 0.08em;
 		color: var(--ink);
 		background: color-mix(in srgb, var(--bg) 62%, transparent);
 		padding: 0.15em 0.45em;
 		border-radius: 4px;
 		white-space: nowrap;
-	}
-
-	@media (prefers-reduced-motion: reduce) {
-		.loupe {
-			display: none;
-		}
 	}
 </style>

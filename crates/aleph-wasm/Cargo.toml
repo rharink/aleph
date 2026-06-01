@@ -21,6 +21,7 @@ all = { level = "warn", priority = -1 }
 
 [dependencies]
 aleph-container     = { workspace = true }
+aleph-develop       = { workspace = true }
 # Direct path dep (not `workspace = true`): a workspace dependency whose
 # definition omits `default-features` ignores a consumer's `default-features =
 # false`. We need the no-native core here (no rayon/blake3/threads on wasm).

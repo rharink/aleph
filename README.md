@@ -57,8 +57,10 @@ aleph offload /Volumes/CARD_A --to /Volumes/RAID --to /Volumes/BACKUP
 crates/
   aleph-codec/          lossless codec — no I/O, no metadata
   aleph-container/      DNG/TIFF container read/write
+  aleph-develop/        raw develop — demosaic + colour (DNG → RGB preview)
   aleph-metadata/       tag preservation and verification
   aleph-orchestration/  parallel job execution, checksums, offload
+  aleph-wasm/           browser bindings — compress / decompress / preview / render
 apps/
   cli/                  aleph binary
   website/              marketing site (SvelteKit + Motion)
