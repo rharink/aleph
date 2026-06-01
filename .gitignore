@@ -39,3 +39,6 @@ testing/
 .worktrees/
 
 *.xmp
+
+# Generated WASM package (build with `just wasm`)
+crates/aleph-wasm/pkg/

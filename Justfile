@@ -75,6 +75,26 @@ bench-cmp name:
 bench-check:
     cargo bench {{ bench_targets }} -- --test
 
+# ── WASM (browser demo) ───────────────────────────────────────────────────────
+# Needs `wasm-bindgen-cli` (cargo install wasm-bindgen-cli) + `wasm-opt`
+# (binaryen, in the dev shell) + the wasm32 target (from rust-toolchain.toml).
+
+# Build + size-optimize the browser package into crates/aleph-wasm/pkg.
+wasm:
+    cargo build -p aleph-wasm --release --target wasm32-unknown-unknown
+    wasm-bindgen --target web --out-dir crates/aleph-wasm/pkg target/wasm32-unknown-unknown/release/aleph_wasm.wasm
+    wasm-opt -Oz --enable-reference-types --enable-bulk-memory \
+        -o crates/aleph-wasm/pkg/aleph_wasm_bg.wasm crates/aleph-wasm/pkg/aleph_wasm_bg.wasm
+
+# Compile-only check that the WASM core still builds (CI guard; no bindgen/opt).
+wasm-check:
+    cargo build -p aleph-wasm --target wasm32-unknown-unknown
+
+# Build, then serve the demo at http://localhost:8000/crates/aleph-wasm/demo/
+wasm-demo: wasm
+    @echo "Demo: http://localhost:8000/crates/aleph-wasm/demo/"
+    python3 -m http.server 8000
+
 # ── Composite ────────────────────────────────────────────────────────────────
 
 # Full local quality gate — run before pushing
@@ -88,3 +108,4 @@ check-full: fmt-check clippy test-cov deny crap
 clean:
     cargo clean
     rm -f lcov.info
+    rm -rf crates/aleph-wasm/pkg

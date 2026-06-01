@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Aleph — in-browser lossless DNG compression</title>
+<style>
+  :root { color-scheme: dark; --bg:#0d1117; --fg:#e6edf3; --muted:#8b949e; --ok:#3fb950; --accent:#58a6ff; --card:#161b22; --line:#30363d; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:16px/1.5 system-ui,sans-serif; background:var(--bg); color:var(--fg); display:flex; min-height:100vh; align-items:center; justify-content:center; padding:2rem; }
+  main { width:100%; max-width:560px; }
+  h1 { font-size:1.4rem; margin:0 0 .25rem; }
+  p.sub { color:var(--muted); margin:0 0 1.5rem; }
+  #drop { border:2px dashed var(--line); border-radius:12px; padding:2.5rem 1.5rem; text-align:center; cursor:pointer; transition:border-color .15s,background .15s; }
+  #drop.hover { border-color:var(--accent); background:#0f1b2d; }
+  #drop strong { color:var(--accent); }
+  input[type=file] { display:none; }
+  .result { margin-top:1.5rem; background:var(--card); border:1px solid var(--line); border-radius:12px; padding:1.25rem; display:none; }
+  .result.show { display:block; }
+  .row { display:flex; justify-content:space-between; padding:.35rem 0; border-bottom:1px solid var(--line); }
+  .row:last-of-type { border-bottom:0; }
+  .row span:first-child { color:var(--muted); }
+  .verdict { font-size:1.1rem; font-weight:600; margin:.5rem 0 1rem; }
+  .verdict.ok { color:var(--ok); }
+  .verdict.warn { color:#d29922; }
+  .saved { color:var(--accent); font-weight:600; }
+  button { margin-top:1rem; width:100%; padding:.6rem; font:inherit; font-weight:600; color:var(--bg); background:var(--accent); border:0; border-radius:8px; cursor:pointer; }
+  button:disabled { opacity:.5; cursor:default; }
+  .err { color:#f85149; margin-top:1rem; white-space:pre-wrap; }
+  code { color:var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Aleph — lossless RAW compression, in your browser</h1>
+  <p class="sub">Drop one uncompressed CinemaDNG / DNG frame. It is compressed and the round-trip is verified bit-perfect — entirely on your machine, nothing uploaded.</p>
+
+  <label id="drop">
+    <input type="file" id="file" accept=".dng,.DNG,image/x-adobe-dng" />
+    <div id="dropText"><strong>Choose a .dng frame</strong> or drop it here</div>
+  </label>
+
+  <div class="result" id="result">
+    <div class="verdict" id="verdict"></div>
+    <div class="row"><span>Original</span><span id="orig"></span></div>
+    <div class="row"><span>Compressed</span><span id="comp"></span></div>
+    <div class="row"><span>Saved</span><span class="saved" id="saved"></span></div>
+    <div class="row"><span>Round-trip check</span><span id="rt"></span></div>
+    <button id="download" disabled>Download compressed .dng</button>
+  </div>
+
+  <div class="err" id="err"></div>
+</main>
+
+<script type="module">
+import init, { compress, decompress } from "../pkg/aleph_wasm.js";
+
+const $ = (id) => document.getElementById(id);
+const fmt = (n) => (n / (1024 * 1024)).toFixed(2) + " MB";
+let ready = false;
+init().then(() => { ready = true; });
+
+const drop = $("drop");
+["dragenter", "dragover"].forEach((e) =>
+  drop.addEventListener(e, (ev) => { ev.preventDefault(); drop.classList.add("hover"); }));
+["dragleave", "drop"].forEach((e) =>
+  drop.addEventListener(e, () => drop.classList.remove("hover")));
+drop.addEventListener("drop", (ev) => {
+  ev.preventDefault();
+  if (ev.dataTransfer.files[0]) run(ev.dataTransfer.files[0]);
+});
+$("file").addEventListener("change", (ev) => {
+  if (ev.target.files[0]) run(ev.target.files[0]);
+});
+
+async function run(file) {
+  $("err").textContent = "";
+  $("result").classList.remove("show");
+  if (!ready) { await init(); ready = true; }
+
+  try {
+    const input = new Uint8Array(await file.arrayBuffer());
+    const t0 = performance.now();
+    const res = compress(input);
+    const ms = Math.round(performance.now() - t0);
+
+    // `res.bytes` is a wasm getter that COPIES out of wasm memory on every
+    // access — read it once and reuse the local.
+    const compressed = res.bytes;
+    // Authoritative proof: `verified` means Aleph decoded every compressed tile
+    // and confirmed the pixels + metadata match the source exactly (done in Rust
+    // before returning). Independent confirmation: decompress, then re-compress —
+    // the bytes must be identical, i.e. the round-trip is a fixed point. (We do
+    // NOT compare to the original camera file: the writer re-lays-out the
+    // container losslessly, so its bytes differ by layout, not by data.)
+    const reres = compress(decompress(compressed));
+    const recompressed = reres.bytes;
+    let idempotent = recompressed.length === compressed.length;
+    for (let i = 0; idempotent && i < recompressed.length; i++) {
+      idempotent = recompressed[i] === compressed[i];
+    }
+    const saved = 1 - res.compressed_len / res.original_len;
+    const lossless = res.verified && reres.verified && idempotent;
+    $("verdict").textContent = lossless ? "✓ Verified bit-perfect" : "⚠ Not verified lossless";
+    $("verdict").className = "verdict " + (lossless ? "ok" : "warn");
+    $("orig").textContent = fmt(res.original_len);
+    $("comp").textContent = fmt(res.compressed_len) + ` (${ms} ms)`;
+    $("saved").textContent = (saved >= 0 ? "−" : "+") + Math.abs(saved * 100).toFixed(1) + "%";
+    $("rt").textContent = idempotent ? "decompress → re-compress identical ✓" : "MISMATCH ✗";
+    $("result").classList.add("show");
+
+    const btn = $("download");
+    btn.disabled = false;
+    btn.onclick = () => {
+      const url = URL.createObjectURL(new Blob([compressed], { type: "image/x-adobe-dng" }));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = file.name.replace(/\.dng$/i, "") + ".aleph.dng";
+      a.click();
+      URL.revokeObjectURL(url);
+    };
+  } catch (e) {
+    $("err").textContent = "Could not compress this file:\n" + (e?.message ?? e);
+  }
+}
+</script>
+</body>
+</html>

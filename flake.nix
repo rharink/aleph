@@ -37,6 +37,9 @@
 
           # Metadata inspection — verify EXIF/RAW tags in compressed files
           exiftool
+
+          # WASM: wasm-opt (binaryen) shrinks the browser package built by `just wasm`
+          binaryen
         ];
 
         # Not in nixpkgs / marked broken — install once with cargo install:

@@ -50,6 +50,11 @@ jobs:
       - name: Test
         run: just test
 
+      # Guard that the browser core still compiles to wasm32 (the website depends
+      # on it). Compile-only — bindgen/wasm-opt run at release time, not in CI.
+      - name: WASM build check
+        run: just wasm-check
+
       # License and advisory policy (deny.toml). Fetches the RustSec DB.
       - name: Dependency policy
         run: just deny

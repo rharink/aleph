@@ -4,6 +4,7 @@ members = [
     "crates/aleph-container",
     "crates/aleph-metadata",
     "crates/aleph-orchestration",
+    "crates/aleph-wasm",
     "apps/cli",
 ]
 resolver = "2"
