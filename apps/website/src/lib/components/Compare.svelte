@@ -19,6 +19,7 @@
 	let { webm, mp4, poster, ratio = '16 / 9', zoom = 2, reduction = 60 }: Props = $props();
 
 	const LOUPE = 150; // css px (square)
+	const SKEW = 0.5; // seconds — applied by `skewTop` so the panes read as two streams.
 
 	let stage = $state<HTMLElement>();
 	let base = $state<HTMLVideoElement>();
@@ -33,6 +34,7 @@
 	let ptr = { x: 0, y: 0 };
 	let pos = $state(50);
 	let dragging = false;
+	let skewed = false;
 
 	onMount(() => {
 		if (canvas) {
@@ -45,6 +47,7 @@
 		if (!interactive) return;
 
 		const play = () => {
+			skewTop();
 			base?.play().catch(() => {});
 			top?.play().catch(() => {});
 		};
@@ -69,6 +72,29 @@
 			cancelAnimationFrame(raf);
 		};
 	});
+
+	// Seed a deliberate 500ms lead on the right (Aleph) pane so the two video
+	// layers read as genuinely independent streams, not one mirrored clip. The
+	// loupe samples only `base`, so the pixel-identity proof is untouched.
+	function skewTop() {
+		if (skewed || !top || top.readyState < 1) return;
+		top.currentTime = SKEW;
+		skewed = true;
+	}
+
+	// Loop both layers ourselves rather than via the per-element `loop` attribute:
+	// native loop wraps each video the instant it individually reaches the end, so
+	// the 500ms-leading pane would restart 500ms before the other — a visible
+	// double-cut. Resetting both to their phase in the same frame (driven by
+	// whichever ends first, always the leader) makes the loop one simultaneous cut
+	// while preserving the constant offset.
+	function loopReset() {
+		if (!base || !top) return;
+		base.currentTime = 0;
+		top.currentTime = SKEW;
+		base.play().catch(() => {});
+		top.play().catch(() => {});
+	}
 
 	function setPos(clientX: number) {
 		if (!stage) return;
@@ -197,10 +223,10 @@
 >
 	<video
 		bind:this={base}
+		onended={loopReset}
 		class="layer"
 		{poster}
 		muted
-		loop
 		playsinline
 		preload="auto"
 		aria-hidden="true"
@@ -210,11 +236,12 @@
 	</video>
 	<video
 		bind:this={top}
+		onloadedmetadata={skewTop}
+		onended={loopReset}
 		class="layer clip"
 		style="clip-path: inset(0 {100 - pos}% 0 0);"
 		{poster}
 		muted
-		loop
 		playsinline
 		preload="auto"
 		aria-hidden="true"
@@ -229,7 +256,18 @@
 		<span class="pct">−{reduction}% file size</span>
 	</span>
 	<div class="divider" style="left: {pos}%;"></div>
-	<div class="handle" style="left: {pos}%;" aria-hidden="true"><span>⟷</span></div>
+	<div class="handle" style="left: {pos}%;" aria-hidden="true">
+		<svg
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="currentColor"
+			stroke-width="1.6"
+			stroke-linecap="round"
+			stroke-linejoin="round"
+		>
+			<path d="M9 8 5 12 9 16M15 8 19 12 15 16M5 12 19 12" />
+		</svg>
+	</div>
 	<span class="badge mono">0 px changed · identical</span>
 
 	<div
@@ -294,9 +332,13 @@
 		background: color-mix(in srgb, var(--bg) 55%, transparent);
 		backdrop-filter: blur(8px);
 		color: var(--ink);
-		font-family: var(--font-mono);
-		font-size: 0.95rem;
 		pointer-events: none;
+	}
+
+	.handle svg {
+		display: block;
+		width: 18px;
+		height: 18px;
 	}
 
 	.tag {

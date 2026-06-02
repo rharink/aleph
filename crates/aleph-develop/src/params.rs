@@ -2,6 +2,8 @@
 
 use aleph_container::Dng;
 use aleph_container::Ifd;
+use aleph_container::Image;
+use aleph_container::Layout;
 use aleph_container::Value;
 
 const TAG_IMAGE_WIDTH: u16 = 256;
@@ -101,7 +103,7 @@ fn frame_from(ifd: &Ifd) -> Option<RawFrame> {
     }
     let image = ifd.image.as_ref()?;
 
-    let packed: Vec<u8> = image.segments.concat();
+    let packed = pack_rows(image, width, height, bits)?;
     let params = DevelopParams {
         width,
         height,
@@ -114,6 +116,47 @@ fn frame_from(ifd: &Ifd) -> Option<RawFrame> {
         cam_to_xyz: invert3(color_matrix(ifd)),
     };
     Some(RawFrame { params, packed })
+}
+
+// Reassemble row-major packed sample bytes from the image segments, trimming any
+// per-strip padding. Mirrors the codec's per-segment layout. Returns None for
+// layouts we can't faithfully linearise here: tiles (stored in tile order, not
+// row order) and rows that aren't byte-aligned (a contiguous bit-unpacker would
+// drift across rows).
+fn pack_rows(image: &Image, width: u32, height: u32, bits: u32) -> Option<Vec<u8>> {
+    let rows_per_strip = match image.layout {
+        Layout::Strips { rows_per_strip } => rows_per_strip as usize,
+        Layout::Tiles { .. } => return None,
+    };
+
+    let w = width as usize;
+    let h = height as usize;
+    let bits = bits as usize;
+    // CFA preview is single-component; require byte-aligned rows.
+    if !(bits.is_multiple_of(8) || (w * bits).is_multiple_of(8)) {
+        return None;
+    }
+    let bytes_per_row = (w * bits).div_ceil(8);
+    let rows_per_strip = if rows_per_strip == 0 {
+        h
+    } else {
+        rows_per_strip
+    };
+
+    let mut packed = Vec::with_capacity(h * bytes_per_row);
+    for (index, segment) in image.segments.iter().enumerate() {
+        let start = index.checked_mul(rows_per_strip)?;
+        if start >= h {
+            break;
+        }
+        let need = (h - start).min(rows_per_strip) * bytes_per_row;
+        if segment.len() < need {
+            return None; // truncated strip
+        }
+        packed.extend_from_slice(&segment[..need]);
+    }
+
+    (packed.len() == h * bytes_per_row).then_some(packed)
 }
 
 fn black_level(ifd: &Ifd) -> [f32; 4] {
@@ -293,6 +336,48 @@ mod tests {
     fn skips_compressed_raw() {
         let mut ifd = cfa_ifd();
         ifd.set(259, Value::Short(vec![7])); // JPEG-compressed — can't unpack here
+        let dng = Dng {
+            endian: Endian::Little,
+            ifds: vec![ifd],
+        };
+        assert!(raw_frame(&dng).is_none());
+    }
+
+    #[test]
+    fn reassembles_padded_strips() {
+        let mut ifd = Ifd::default();
+        ifd.set(256, Value::Long(vec![4]));
+        ifd.set(257, Value::Long(vec![2]));
+        ifd.set(258, Value::Short(vec![8]));
+        ifd.set(259, Value::Short(vec![1]));
+        ifd.set(262, Value::Short(vec![32803]));
+        ifd.set(277, Value::Short(vec![1]));
+        ifd.image = Some(Image {
+            layout: Layout::Strips { rows_per_strip: 1 },
+            segments: vec![
+                vec![10, 11, 12, 13, 99], // one 4-byte row + trailing strip padding
+                vec![20, 21, 22, 23, 99],
+            ],
+        });
+        let dng = Dng {
+            endian: Endian::Little,
+            ifds: vec![ifd],
+        };
+        let frame = raw_frame(&dng).expect("frame");
+        // Padding trimmed; rows concatenated in order.
+        assert_eq!(frame.packed, vec![10, 11, 12, 13, 20, 21, 22, 23]);
+    }
+
+    #[test]
+    fn declines_tiles() {
+        let mut ifd = cfa_ifd();
+        ifd.image = Some(Image {
+            layout: Layout::Tiles {
+                tile_width: 2,
+                tile_length: 2,
+            },
+            segments: vec![vec![0u8; 12]],
+        });
         let dng = Dng {
             endian: Endian::Little,
             ifds: vec![ifd],

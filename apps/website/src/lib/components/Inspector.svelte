@@ -33,6 +33,8 @@
 
 	// Raw DNG bytes are large; keep them out of reactive state.
 	let dngBytes: Uint8Array | null = null;
+	// Request generation: a newer drop bumps this; stale async work bails out.
+	let seq = 0;
 	// Decoded frames (object URLs): the original, and the Aleph round-trip.
 	let previewUrl = $state<string | null>(null);
 	let compressedUrl = $state<string | null>(null);
@@ -73,6 +75,7 @@
 
 	async function handleFile(file: File | undefined | null) {
 		if (!file) return;
+		const token = ++seq;
 		resetCompress();
 		setPreview(null);
 		setCompressed(null);
@@ -80,46 +83,64 @@
 		view = { kind: 'reading', name: file.name, bytes: file.size };
 		try {
 			const buffer = await file.arrayBuffer();
+			if (token !== seq) return;
 			const facts = await inspectBuffer(file.name, file.size, buffer);
-			dngBytes = new Uint8Array(buffer);
+			if (token !== seq) return;
+			const bytes = new Uint8Array(buffer);
 
-			if (facts.tiff) setPreview(await frameUrl(dngBytes));
+			let url: string | null = null;
+			if (facts.tiff) {
+				url = await frameUrl(bytes);
+				if (token !== seq) {
+					if (url) URL.revokeObjectURL(url);
+					return;
+				}
+			}
 
+			dngBytes = bytes;
+			setPreview(url);
 			view = { kind: 'done', facts };
 			// Compress right away — no extra click. Its synchronous prefix flips the
 			// UI into the compressing state before the first paint (no button flash).
-			if (facts.format === 'DNG' && codecAvailable) runCompress();
+			if (facts.format === 'DNG' && codecAvailable) runCompress(token, bytes);
 			await tick();
-			if (rows) enter(rows.querySelectorAll('.row'), { y: 10, step: 0.05, duration: 0.45 });
+			if (token === seq && rows) {
+				enter(rows.querySelectorAll('.row'), { y: 10, step: 0.05, duration: 0.45 });
+			}
 		} catch {
-			view = { kind: 'error', message: 'Could not read that file.' };
+			if (token === seq) view = { kind: 'error', message: 'Could not read that file.' };
 		}
 	}
 
-	async function runCompress() {
-		if (!dngBytes) return;
+	async function runCompress(token = seq, bytes = dngBytes) {
+		if (!bytes) return;
 		compressing = true;
 		compressError = null;
 		result = null;
 		setCompressed(null);
 		const start = performance.now();
 		try {
-			const r = await compress(dngBytes);
+			const r = await compress(bytes);
+			if (token !== seq) return; // a newer file superseded this run
 			elapsedMs = Math.round(performance.now() - start);
 			result = r;
 			// Decode the compressed file itself, so the right pane is genuinely the
 			// Aleph round-trip — not a copy of the original decode.
 			try {
 				const developed = await render(await decompress(r.bytes));
-				if (developed)
+				if (token !== seq) return;
+				if (developed) {
 					setCompressed(await rgbaToUrl(developed.rgba, developed.width, developed.height));
+				}
 			} catch {
 				// Compare falls back to the single (original) decode.
 			}
 		} catch (error) {
-			compressError = error instanceof Error ? error.message : 'Compression failed.';
+			if (token === seq) {
+				compressError = error instanceof Error ? error.message : 'Compression failed.';
+			}
 		} finally {
-			compressing = false;
+			if (token === seq) compressing = false;
 		}
 	}
 
@@ -224,7 +245,7 @@
 						src={previewUrl}
 						srcRight={compressedUrl}
 						reduction={result ? Math.round(result.ratio * 100) : null}
-						verified={result ? result.verified : null}
+						verified={result ? true : null}
 					/>
 				{:else if view.facts.tiff}
 					<div class="noframe">
@@ -293,10 +314,8 @@
 										</div>
 										<div class="row">
 											<dt>Round-trip</dt>
-											<dd class="mono" class:good={result.verified} class:warn={!result.verified}>
-												{result.verified ? 'verified ✓' : 'not verified ⚠'}{elapsedMs
-													? ` · ${elapsedMs} ms`
-													: ''}
+											<dd class="mono good">
+												verified ✓{elapsedMs ? ` · ${elapsedMs} ms` : ''}
 											</dd>
 										</div>
 									</dl>
@@ -306,7 +325,7 @@
 								{:else if compressing}
 									<p class="note compressing">Compressing & verifying the round-trip…</p>
 								{:else}
-									<button type="button" class="btn btn-primary act" onclick={runCompress}>
+									<button type="button" class="btn btn-primary act" onclick={() => runCompress()}>
 										Compress losslessly
 									</button>
 									{#if compressError}<p class="err">{compressError}</p>{/if}
@@ -449,10 +468,6 @@
 	.row dd.good {
 		color: var(--ink);
 		font-weight: 600;
-	}
-
-	.row dd.warn {
-		color: var(--ink-faint);
 	}
 
 	.meta {

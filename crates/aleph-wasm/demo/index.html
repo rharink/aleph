@@ -87,12 +87,12 @@ async function run(file) {
     // `res.bytes` is a wasm getter that COPIES out of wasm memory on every
     // access — read it once and reuse the local.
     const compressed = res.bytes;
-    // Authoritative proof: `verified` means Aleph decoded every compressed tile
-    // and confirmed the pixels + metadata match the source exactly (done in Rust
-    // before returning). Independent confirmation: decompress, then re-compress —
-    // the bytes must be identical, i.e. the round-trip is a fixed point. (We do
-    // NOT compare to the original camera file: the writer re-lays-out the
-    // container losslessly, so its bytes differ by layout, not by data.)
+    // `compress` already returns ONLY after the Rust core verified the round-trip
+    // bit-perfect (a failure throws), so reaching here means it's lossless.
+    // Independent confirmation: decompress, then re-compress — the bytes must be
+    // identical, i.e. the round-trip is a fixed point. (We do NOT compare to the
+    // original camera file: the writer re-lays-out the container losslessly, so
+    // its bytes differ by layout, not by data.)
     const reres = compress(decompress(compressed));
     const recompressed = reres.bytes;
     let idempotent = recompressed.length === compressed.length;
@@ -100,9 +100,8 @@ async function run(file) {
       idempotent = recompressed[i] === compressed[i];
     }
     const saved = 1 - res.compressed_len / res.original_len;
-    const lossless = res.verified && reres.verified && idempotent;
-    $("verdict").textContent = lossless ? "✓ Verified bit-perfect" : "⚠ Not verified lossless";
-    $("verdict").className = "verdict " + (lossless ? "ok" : "warn");
+    $("verdict").textContent = idempotent ? "✓ Verified bit-perfect" : "⚠ Not verified lossless";
+    $("verdict").className = "verdict " + (idempotent ? "ok" : "warn");
     $("orig").textContent = fmt(res.original_len);
     $("comp").textContent = fmt(res.compressed_len) + ` (${ms} ms)`;
     $("saved").textContent = (saved >= 0 ? "−" : "+") + Math.abs(saved * 100).toFixed(1) + "%";

@@ -154,7 +154,18 @@
 		Aleph round-trip{#if reduction !== null}<span class="pct"> −{reduction}%</span>{/if}
 	</span>
 	<div class="divider" style="left: {pos}%;"></div>
-	<div class="handle" style="left: {pos}%;" aria-hidden="true"><span>⟷</span></div>
+	<div class="handle" style="left: {pos}%;" aria-hidden="true">
+		<svg
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="currentColor"
+			stroke-width="1.6"
+			stroke-linecap="round"
+			stroke-linejoin="round"
+		>
+			<path d="M9 8 5 12 9 16M15 8 19 12 15 16M5 12 19 12" />
+		</svg>
+	</div>
 	<span class="badge mono">
 		{#if verified === true}verified ✓ · 0 px changed{:else if verified === false}not verified{:else}embedded
 			preview{/if}
@@ -228,9 +239,13 @@
 		background: color-mix(in srgb, var(--bg) 55%, transparent);
 		backdrop-filter: blur(8px);
 		color: var(--ink);
-		font-family: var(--font-mono);
-		font-size: 0.95rem;
 		pointer-events: none;
+	}
+
+	.handle svg {
+		display: block;
+		width: 18px;
+		height: 18px;
 	}
 
 	.tag {

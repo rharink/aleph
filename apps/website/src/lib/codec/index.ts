@@ -48,12 +48,11 @@ function detectFormat(name: string, tiff: TiffInfo | null): FileFormat {
 // ── Lossless codec (WASM) ──────────────────────────────────────────────────
 
 export interface CompressionResult {
-	/** The compressed DNG, ready to download or decompress. */
+	/** The compressed DNG — returned only after the core verified the round-trip
+	 *  bit-perfect, so these bytes are always provably lossless. */
 	bytes: Uint8Array;
 	originalLen: number;
 	compressedLen: number;
-	/** decompress(compress(x)) == x, checked in-memory by the Rust core. */
-	verified: boolean;
 	/** Fraction of size removed (0–1). */
 	ratio: number;
 }
@@ -78,6 +77,7 @@ function loadCodec(): Promise<CodecModule> {
 
 export async function compress(dng: Uint8Array): Promise<CompressionResult> {
 	const mod = await loadCodec();
+	// Throws if the round-trip didn't verify — no suspect bytes are ever returned.
 	const result = mod.compress(dng);
 	try {
 		// `bytes` copies out of wasm memory on each access — read it once.
@@ -88,7 +88,6 @@ export async function compress(dng: Uint8Array): Promise<CompressionResult> {
 			bytes,
 			originalLen,
 			compressedLen,
-			verified: result.verified,
 			ratio: originalLen ? 1 - compressedLen / originalLen : 0
 		};
 	} finally {

@@ -35,25 +35,25 @@ export const reveal: Action<HTMLElement, RevealOptions | undefined> = (node, opt
 		return {};
 	}
 
+	// Start already offset + transparent so the first animation frame is
+	// continuous (no snap), and never set `will-change` — toggling it creates and
+	// destroys a compositing layer, which re-rasterises text and shows as a jump.
 	node.style.opacity = '0';
-	node.style.willChange = 'opacity, transform';
+	node.style.transform = `translate(${x}px, ${y}px)`;
 
-	const stop = inView(
+	// `inView` re-fires every time the element re-enters; reveal is one-shot, so
+	// stop observing after the first trigger (otherwise it replays on scroll-back).
+	let stop: VoidFunction = () => {};
+	stop = inView(
 		node,
 		() => {
-			animate(
-				node,
-				{ opacity: [0, 1], x: [x, 0], y: [y, 0] },
-				{ duration, delay, ease: EASE_OUT }
-			).finished.then(() => {
-				node.style.willChange = '';
-			});
-			return () => {}; // no-op on leave: reveal is one-shot
+			animate(node, { opacity: [0, 1], x: [x, 0], y: [y, 0] }, { duration, delay, ease: EASE_OUT });
+			stop();
 		},
 		{ amount }
 	);
 
-	return { destroy: stop };
+	return { destroy: () => stop() };
 };
 
 export interface EnterOptions {

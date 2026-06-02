@@ -32,7 +32,7 @@
 				webm="/media/compare.webm"
 				mp4="/media/compare.mp4"
 				poster="/media/compare-poster.webp"
-				reduction={60}
+				reduction={45}
 			/>
 			<p class="cap">
 				Both panes are the same footage — your original and Aleph's output. Move the loupe anywhere,
