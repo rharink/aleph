@@ -1,10 +1,13 @@
 <script lang="ts">
 	import '@fontsource-variable/inter';
 	import '../app.css';
+	import Nav from '$lib/components/Nav.svelte';
+	import Footer from '$lib/components/Footer.svelte';
+	import CookieBanner from '$lib/components/CookieBanner.svelte';
 
 	let { children } = $props();
 
-	const title = 'Aleph — near-lossless RAW compression';
+	const title = 'Aleph: near-lossless RAW compression';
 	const description =
 		'Fast, bit-perfect lossless compression for CinemaDNG and open-format RAW. Verified round-trips, dual-destination offload, built for the set.';
 </script>
@@ -21,4 +24,7 @@
 	<meta name="theme-color" content="#0a0a0b" />
 </svelte:head>
 
+<Nav />
 {@render children()}
+<Footer />
+<CookieBanner />

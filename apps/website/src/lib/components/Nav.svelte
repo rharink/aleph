@@ -1,76 +1,51 @@
-<header class="nav">
-	<div class="container inner">
-		<a class="brand" href="#top" aria-label="Aleph home">
-			<img class="logo" src="/logo/aleph-logo-full-white.svg" alt="" />
-			<span class="tag label">v1 · early access</span>
+<script lang="ts">
+	import { page } from '$app/state';
+	import { onMount } from 'svelte';
+
+	// Hidden over the home hero for an immersive first screen, revealed once the
+	// hero scrolls out of view. Non-home pages render visible immediately so the
+	// prerendered navigation is usable before hydration.
+	let visible = $state(page.url.pathname !== '/');
+
+	onMount(() => {
+		const hero = document.getElementById('top');
+		if (!hero) {
+			visible = true;
+			return;
+		}
+		const io = new IntersectionObserver(([entry]) => (visible = !entry.isIntersecting), {
+			threshold: 0
+		});
+		io.observe(hero);
+		return () => io.disconnect();
+	});
+</script>
+
+<header
+	class="sticky top-0 z-50 border-b border-line bg-bg/80 backdrop-blur-[14px] transition-[transform,opacity] duration-300 motion-reduce:transition-none"
+	class:pointer-events-none={!visible}
+	class:pointer-events-auto={visible}
+	class:-translate-y-full={!visible}
+	class:translate-y-0={visible}
+	class:opacity-0={!visible}
+	class:opacity-100={visible}
+	inert={!visible}
+>
+	<div
+		class="mx-auto flex h-[62px] w-full max-w-[1140px] items-center justify-between px-[clamp(20px,5vw,40px)]"
+	>
+		<a class="inline-flex items-center gap-3" href="/#top" aria-label="Aleph home">
+			<img class="block h-6 w-auto" src="/logo/aleph-logo-full-white.svg" alt="" />
 		</a>
 
-		<nav class="links" aria-label="Primary">
-			<a href="#features">Features</a>
-			<a href="#workflow">Workflow</a>
-			<a href="#top">Inspect a file</a>
+		<nav
+			class="flex items-center gap-6 text-[0.92rem] text-ink-muted [&_a:hover]:text-ink [&_a]:transition-colors max-[640px]:[&_a:not(:last-child)]:hidden"
+			aria-label="Primary"
+		>
+			<a href="/#features">Features</a>
+			<a href="/#compatibility">Formats</a>
+			<a href="/compatibility">Camera table</a>
+			<a href="/#inspect">Inspect a file</a>
 		</nav>
 	</div>
 </header>
-
-<style>
-	.nav {
-		position: sticky;
-		top: 0;
-		z-index: 50;
-		background: color-mix(in srgb, var(--bg) 80%, transparent);
-		backdrop-filter: blur(14px);
-		border-bottom: 1px solid var(--line);
-	}
-
-	.inner {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		height: 62px;
-	}
-
-	.brand {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.7rem;
-	}
-
-	.logo {
-		height: 24px;
-		width: auto;
-		display: block;
-	}
-
-	.tag {
-		font-size: 0.62rem;
-		letter-spacing: 0.12em;
-		color: var(--ink-faint);
-		border: 1px solid var(--line);
-		padding: 0.25em 0.6em;
-		border-radius: 999px;
-	}
-
-	.links {
-		display: flex;
-		align-items: center;
-		gap: 1.6rem;
-		font-size: 0.92rem;
-		color: var(--ink-muted);
-	}
-
-	.links a {
-		transition: color 0.15s ease;
-	}
-
-	.links a:hover {
-		color: var(--ink);
-	}
-
-	@media (max-width: 640px) {
-		.tag,
-		.links a:not(:last-child) {
-			display: none;
-		}
-	}
-</style>

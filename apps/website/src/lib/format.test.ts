@@ -16,8 +16,8 @@ describe('formatBytes', () => {
 	});
 
 	it('guards against invalid input', () => {
-		expect(formatBytes(-1)).toBe('—');
-		expect(formatBytes(NaN)).toBe('—');
+		expect(formatBytes(-1)).toBe('-');
+		expect(formatBytes(NaN)).toBe('-');
 	});
 });
 

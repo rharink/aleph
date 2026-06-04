@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { blake3 } from 'hash-wasm';
 
-// Proves the in-browser checksum is genuine BLAKE3 — these digests match the
+// Proves the in-browser checksum is genuine BLAKE3. These digests match the
 // canonical test vectors (and Rust's `blake3`), so the value shown for a file
 // equals what `aleph` will compute server-side.
 describe('blake3 checksum', () => {

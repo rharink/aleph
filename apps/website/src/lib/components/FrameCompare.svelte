@@ -10,12 +10,14 @@
 		reduction?: number | null;
 		/** Round-trip verified bit-perfect. */
 		verified?: boolean | null;
-		zoom?: number;
 	}
 
-	let { src, srcRight = null, reduction = null, verified = null, zoom = 2.5 }: Props = $props();
+	let { src, srcRight = null, reduction = null, verified = null }: Props = $props();
 
 	const LOUPE = 150;
+	const ZOOM_MIN = 1.5;
+	const ZOOM_MAX = 12;
+	const ZOOM_INIT = 2.5;
 
 	let stage = $state<HTMLElement>();
 	let img = $state<HTMLImageElement>();
@@ -23,6 +25,7 @@
 	let canvas = $state<HTMLCanvasElement>();
 	let visible = $state(false);
 	let pos = $state(50);
+	let zoomLevel = $state(ZOOM_INIT);
 	let dragging = false;
 	let dpr = 1;
 
@@ -45,7 +48,7 @@
 		const boxY = Math.max(0, Math.min(rect.height - LOUPE, py - half));
 		if (loupeEl) loupeEl.style.transform = `translate(${boxX}px, ${boxY}px)`;
 
-		const region = LOUPE / zoom / scale;
+		const region = LOUPE / zoomLevel / scale;
 		let srcX = (boxX + half) / scale;
 		let srcY = (boxY + half) / scale;
 		srcX = Math.max(region / 2, Math.min(img.naturalWidth - region / 2, srcX));
@@ -119,10 +122,32 @@
 		else return;
 		event.preventDefault();
 	}
+
+	// Scroll to zoom the loupe. Multiplicative and `deltaMode`-normalised so mice
+	// and trackpads agree; at the zoom limits the wheel falls through to normal
+	// page scrolling so the magnifier never traps the page.
+	function onWheel(event: WheelEvent) {
+		if (!stage) return;
+		if (
+			(zoomLevel <= ZOOM_MIN && event.deltaY > 0) ||
+			(zoomLevel >= ZOOM_MAX && event.deltaY < 0)
+		) {
+			return;
+		}
+		event.preventDefault();
+		const rect = stage.getBoundingClientRect();
+		const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? rect.height : 1;
+		zoomLevel = Math.min(
+			ZOOM_MAX,
+			Math.max(ZOOM_MIN, zoomLevel * Math.exp((-event.deltaY * unit) / 600))
+		);
+		visible = true;
+		draw(event.clientX - rect.left, event.clientY - rect.top);
+	}
 </script>
 
 <div
-	class="fcompare"
+	class="relative m-0 w-full cursor-ew-resize touch-none select-none overflow-hidden rounded-aleph border border-line bg-bg-2 leading-none"
 	bind:this={stage}
 	role="slider"
 	tabindex="0"
@@ -136,11 +161,19 @@
 	onpointerleave={leave}
 	onpointercancel={leave}
 	onkeydown={onKey}
+	onwheel={onWheel}
 >
-	<img bind:this={img} {src} alt="Decoded original frame" decoding="async" draggable="false" />
+	<img
+		class="block h-auto w-full select-none [-webkit-user-drag:none]"
+		bind:this={img}
+		{src}
+		alt="Decoded original frame"
+		decoding="async"
+		draggable="false"
+	/>
 	{#if srcRight}
 		<img
-			class="right"
+			class="absolute inset-0 h-full w-full select-none [-webkit-user-drag:none]"
 			src={srcRight}
 			style="clip-path: inset(0 0 0 {pos}%);"
 			alt="Decoded Aleph round-trip"
@@ -149,13 +182,30 @@
 		/>
 	{/if}
 
-	<span class="tag tl mono">Original</span>
-	<span class="tag tr mono">
-		Aleph round-trip{#if reduction !== null}<span class="pct"> −{reduction}%</span>{/if}
+	<span
+		class="pointer-events-none absolute top-3 left-3 rounded-md bg-bg/60 px-2 py-1 font-mono text-[0.58rem] leading-tight uppercase tracking-[0.16em] text-ink backdrop-blur-md [font-feature-settings:normal]"
+		>Original</span
+	>
+	<span
+		class="pointer-events-none absolute top-3 right-3 rounded-md bg-bg/60 px-2 py-1 text-right font-mono text-[0.58rem] leading-tight uppercase tracking-[0.16em] text-ink backdrop-blur-md [font-feature-settings:normal]"
+	>
+		Aleph round-trip{#if reduction !== null}<span
+				class="font-semibold [font-variant-numeric:tabular-nums]"
+			>
+				−{reduction}%</span
+			>{/if}
 	</span>
-	<div class="divider" style="left: {pos}%;"></div>
-	<div class="handle" style="left: {pos}%;" aria-hidden="true">
+	<div
+		class="pointer-events-none absolute top-0 bottom-0 w-px -translate-x-1/2 bg-ink"
+		style="left: {pos}%;"
+	></div>
+	<div
+		class="pointer-events-none absolute top-1/2 grid size-10 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-line-strong bg-bg/55 text-ink backdrop-blur-md"
+		style="left: {pos}%;"
+		aria-hidden="true"
+	>
 		<svg
+			class="block size-[18px]"
 			viewBox="0 0 24 24"
 			fill="none"
 			stroke="currentColor"
@@ -166,163 +216,23 @@
 			<path d="M9 8 5 12 9 16M15 8 19 12 15 16M5 12 19 12" />
 		</svg>
 	</div>
-	<span class="badge mono">
+	<span
+		class="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-line bg-bg/60 px-3 py-1.5 font-mono text-[0.6rem] leading-tight text-ink backdrop-blur-md [font-feature-settings:normal]"
+	>
 		{#if verified === true}verified ✓ · 0 px changed{:else if verified === false}not verified{:else}embedded
 			preview{/if}
 	</span>
 
 	<div
-		class="loupe"
-		class:show={visible}
+		class="pointer-events-none absolute top-0 left-0 overflow-hidden rounded-aleph border border-ink opacity-0 shadow-[0_10px_34px_rgba(0,0,0,0.55)] transition-opacity duration-150 will-change-transform"
+		class:opacity-100={visible}
 		bind:this={loupeEl}
 		style="width: {LOUPE}px; height: {LOUPE}px;"
 	>
-		<canvas bind:this={canvas}></canvas>
-		<span class="loupe-tag mono">{zoom}× · identical</span>
+		<canvas class="block h-full w-full" bind:this={canvas}></canvas>
+		<span
+			class="absolute bottom-1 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-bg/60 px-2 py-0.5 font-mono text-[0.55rem] tracking-[0.08em] text-ink [font-feature-settings:normal]"
+			>{zoomLevel.toFixed(1)}× · identical</span
+		>
 	</div>
 </div>
-
-<style>
-	.fcompare {
-		position: relative;
-		margin: 0;
-		width: 100%;
-		overflow: hidden;
-		border-radius: var(--radius);
-		border: 1px solid var(--line);
-		background: var(--bg-2);
-		cursor: ew-resize;
-		touch-action: none;
-		line-height: 0;
-		user-select: none;
-		-webkit-user-select: none;
-	}
-
-	img {
-		display: block;
-		width: 100%;
-		height: auto;
-		-webkit-user-drag: none;
-		user-select: none;
-	}
-
-	/* Second decode (the Aleph round-trip); clipped to the right of the divider. */
-	.right {
-		position: absolute;
-		inset: 0;
-		width: 100%;
-		height: 100%;
-	}
-
-	.divider {
-		position: absolute;
-		top: 0;
-		bottom: 0;
-		left: 50%; /* overridden inline by the divider position */
-		width: 1px;
-		background: var(--ink);
-		transform: translateX(-0.5px);
-		pointer-events: none;
-	}
-
-	.handle {
-		position: absolute;
-		top: 50%;
-		left: 50%; /* overridden inline by the divider position */
-		transform: translate(-50%, -50%);
-		width: 40px;
-		height: 40px;
-		display: grid;
-		place-items: center;
-		border-radius: 999px;
-		border: 1px solid var(--line-strong);
-		background: color-mix(in srgb, var(--bg) 55%, transparent);
-		backdrop-filter: blur(8px);
-		color: var(--ink);
-		pointer-events: none;
-	}
-
-	.handle svg {
-		display: block;
-		width: 18px;
-		height: 18px;
-	}
-
-	.tag {
-		position: absolute;
-		top: 12px;
-		font-size: 0.58rem;
-		letter-spacing: 0.16em;
-		text-transform: uppercase;
-		line-height: 1.3;
-		color: var(--ink);
-		background: color-mix(in srgb, var(--bg) 60%, transparent);
-		backdrop-filter: blur(6px);
-		padding: 0.3em 0.6em;
-		border-radius: 6px;
-		pointer-events: none;
-	}
-	.tl {
-		left: 12px;
-	}
-	.tr {
-		right: 12px;
-		text-align: right;
-	}
-	.pct {
-		font-variant-numeric: tabular-nums;
-		font-weight: 600;
-	}
-
-	.badge {
-		position: absolute;
-		bottom: 12px;
-		left: 50%;
-		transform: translateX(-50%);
-		font-size: 0.6rem;
-		line-height: 1.3;
-		color: var(--ink);
-		background: color-mix(in srgb, var(--bg) 60%, transparent);
-		backdrop-filter: blur(6px);
-		padding: 0.4em 0.8em;
-		border: 1px solid var(--line);
-		border-radius: 999px;
-		pointer-events: none;
-		white-space: nowrap;
-	}
-
-	.loupe {
-		position: absolute;
-		top: 0;
-		left: 0;
-		pointer-events: none;
-		border-radius: 10px;
-		overflow: hidden;
-		border: 1px solid var(--ink);
-		box-shadow: 0 10px 34px rgba(0, 0, 0, 0.55);
-		opacity: 0;
-		transition: opacity 0.12s ease;
-		will-change: transform;
-	}
-	.loupe.show {
-		opacity: 1;
-	}
-	canvas {
-		display: block;
-		width: 100%;
-		height: 100%;
-	}
-	.loupe-tag {
-		position: absolute;
-		bottom: 5px;
-		left: 50%;
-		transform: translateX(-50%);
-		font-size: 0.55rem;
-		letter-spacing: 0.08em;
-		color: var(--ink);
-		background: color-mix(in srgb, var(--bg) 62%, transparent);
-		padding: 0.15em 0.45em;
-		border-radius: 4px;
-		white-space: nowrap;
-	}
-</style>

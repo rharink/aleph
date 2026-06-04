@@ -17,7 +17,7 @@ export type FileFormat = 'DNG' | 'TIFF' | 'Unknown';
 export interface FileFacts {
 	name: string;
 	bytes: number;
-	/** BLAKE3-256 digest, hex — the same checksum Aleph uses for offload verification. */
+	/** BLAKE3-256 digest, hex. The same checksum Aleph uses for offload verification. */
 	checksum: string;
 	format: FileFormat;
 	tiff: TiffInfo | null;
@@ -48,7 +48,7 @@ function detectFormat(name: string, tiff: TiffInfo | null): FileFormat {
 // ── Lossless codec (WASM) ──────────────────────────────────────────────────
 
 export interface CompressionResult {
-	/** The compressed DNG — returned only after the core verified the round-trip
+	/** The compressed DNG, returned only after the core verified the round-trip
 	 *  bit-perfect, so these bytes are always provably lossless. */
 	bytes: Uint8Array;
 	originalLen: number;
@@ -77,10 +77,10 @@ function loadCodec(): Promise<CodecModule> {
 
 export async function compress(dng: Uint8Array): Promise<CompressionResult> {
 	const mod = await loadCodec();
-	// Throws if the round-trip didn't verify — no suspect bytes are ever returned.
+	// Throws if the round-trip didn't verify. No suspect bytes are ever returned.
 	const result = mod.compress(dng);
 	try {
-		// `bytes` copies out of wasm memory on each access — read it once.
+		// `bytes` copies out of wasm memory on each access. Read it once.
 		const bytes = result.bytes;
 		const originalLen = result.original_len;
 		const compressedLen = result.compressed_len;

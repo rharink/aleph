@@ -1,169 +1,98 @@
-:root {
-	/* Monochrome on dark — black, white, and grays. Media supplies the color. */
-	--bg: #0a0a0b;
-	--bg-2: #0f0f11;
-	--panel: #161619;
-	--ink: #f3f3f5;
-	--ink-muted: #a0a0a9;
-	--ink-faint: #6b6b74;
-	--line: rgba(255, 255, 255, 0.1);
-	--line-strong: rgba(255, 255, 255, 0.22);
+@import 'tailwindcss';
 
-	--radius: 10px;
-	--maxw: 1140px;
-	--measure: 60ch;
+@theme {
+	--color-bg: #0a0a0b;
+	--color-bg-2: #0f0f11;
+	--color-panel: #161619;
+	--color-ink: #f3f3f5;
+	--color-ink-muted: #a0a0a9;
+	--color-ink-faint: #6b6b74;
+	--color-line: rgba(255, 255, 255, 0.1);
+	--color-line-strong: rgba(255, 255, 255, 0.22);
+	--color-tested: #31f28b;
 
 	--font-sans:
 		'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 	--font-mono:
 		ui-monospace, 'SF Mono', 'JetBrains Mono', 'Cascadia Code', Menlo, Consolas, monospace;
+
+	--radius-aleph: 10px;
 }
 
-*,
-*::before,
-*::after {
-	box-sizing: border-box;
+:root {
+	--bg: var(--color-bg);
+	--bg-2: var(--color-bg-2);
+	--panel: var(--color-panel);
+	--ink: var(--color-ink);
+	--ink-muted: var(--color-ink-muted);
+	--ink-faint: var(--color-ink-faint);
+	--line: var(--color-line);
+	--line-strong: var(--color-line-strong);
+	--radius: var(--radius-aleph);
 }
 
-html {
-	scroll-behavior: smooth;
-	-webkit-text-size-adjust: 100%;
-	background: var(--bg);
-}
-
-@media (prefers-reduced-motion: reduce) {
+@layer base {
 	html {
-		scroll-behavior: auto;
+		scroll-behavior: smooth;
+		-webkit-text-size-adjust: 100%;
+		background: var(--color-bg);
 	}
-}
 
-body {
-	margin: 0;
-	background: var(--bg);
-	color: var(--ink);
-	font-family: var(--font-sans);
-	font-size: 17px;
-	line-height: 1.6;
-	font-feature-settings: 'cv05' 1;
-	-webkit-font-smoothing: antialiased;
-	text-rendering: optimizeLegibility;
-}
-
-h1,
-h2,
-h3 {
-	margin: 0;
-	font-weight: 600;
-	line-height: 1.02;
-	letter-spacing: -0.035em;
-	text-wrap: balance;
-}
-
-p {
-	margin: 0;
-}
-
-a {
-	color: inherit;
-	text-decoration: none;
-}
-
-strong {
-	font-weight: 600;
-	color: var(--ink);
-}
-
-img {
-	display: block;
-	max-width: 100%;
-}
-
-.container {
-	width: 100%;
-	max-width: var(--maxw);
-	margin-inline: auto;
-	padding-inline: clamp(20px, 5vw, 40px);
-}
-
-.mono {
-	font-family: var(--font-mono);
-	font-feature-settings: normal;
-}
-
-/* Tiny uppercase tracking label — Swiss micro-type. */
-.label {
-	font-family: var(--font-mono);
-	font-size: 0.72rem;
-	letter-spacing: 0.22em;
-	text-transform: uppercase;
-	color: var(--ink-faint);
-}
-
-.section {
-	padding-block: clamp(72px, 11vw, 132px);
-	border-top: 1px solid var(--line);
-}
-
-.lead {
-	font-size: clamp(1.05rem, 2vw, 1.2rem);
-	color: var(--ink-muted);
-	max-width: var(--measure);
-	line-height: 1.55;
-}
-
-/* Buttons — monochrome: light fill or hairline outline. */
-.btn {
-	display: inline-flex;
-	align-items: center;
-	gap: 0.5em;
-	padding: 0.7em 1.25em;
-	border-radius: var(--radius);
-	border: 1px solid transparent;
-	font: inherit;
-	font-weight: 500;
-	font-size: 0.95rem;
-	cursor: pointer;
-	transition:
-		transform 0.16s ease,
-		background-color 0.16s ease,
-		border-color 0.16s ease,
-		color 0.16s ease;
-}
-
-.btn-primary {
-	background: var(--ink);
-	color: var(--bg);
-}
-
-.btn-primary:hover {
-	transform: translateY(-1px);
-	background: #fff;
-}
-
-.btn-ghost {
-	background: transparent;
-	color: var(--ink);
-	border-color: var(--line-strong);
-}
-
-.btn-ghost:hover {
-	border-color: var(--ink);
-	transform: translateY(-1px);
-}
-
-@media (prefers-reduced-motion: reduce) {
-	.btn:hover {
-		transform: none;
+	@media (prefers-reduced-motion: reduce) {
+		html {
+			scroll-behavior: auto;
+		}
 	}
-}
 
-:focus-visible {
-	outline: 2px solid var(--ink);
-	outline-offset: 2px;
-	border-radius: 3px;
-}
+	body {
+		margin: 0;
+		background: var(--color-bg);
+		color: var(--color-ink);
+		font-family: var(--font-sans);
+		font-size: 17px;
+		line-height: 1.6;
+		font-feature-settings: 'cv05' 1;
+		-webkit-font-smoothing: antialiased;
+		text-rendering: optimizeLegibility;
+	}
 
-::selection {
-	background: var(--ink);
-	color: var(--bg);
+	h1,
+	h2,
+	h3 {
+		margin: 0;
+		font-weight: 600;
+		line-height: 1.02;
+		letter-spacing: -0.035em;
+		text-wrap: balance;
+	}
+
+	p {
+		margin: 0;
+	}
+
+	a {
+		color: inherit;
+		text-decoration: none;
+	}
+
+	strong {
+		font-weight: 600;
+		color: var(--color-ink);
+	}
+
+	img {
+		display: block;
+		max-width: 100%;
+	}
+
+	:focus-visible {
+		outline: 2px solid var(--color-ink);
+		outline-offset: 2px;
+		border-radius: 3px;
+	}
+
+	::selection {
+		background: var(--color-ink);
+		color: var(--color-bg);
+	}
 }

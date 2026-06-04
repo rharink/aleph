@@ -1,4 +1,4 @@
-// Thin Svelte bindings over Motion (motion.dev) — the framework-agnostic engine
+// Thin Svelte bindings over Motion (motion.dev), the framework-agnostic engine
 // behind Framer Motion. Actions run only in the browser (Svelte never invokes
 // them during SSR), so DOM/`matchMedia` access here is safe.
 import type { Action } from 'svelte/action';
@@ -36,7 +36,7 @@ export const reveal: Action<HTMLElement, RevealOptions | undefined> = (node, opt
 	}
 
 	// Start already offset + transparent so the first animation frame is
-	// continuous (no snap), and never set `will-change` — toggling it creates and
+	// continuous (no snap), and never set `will-change`. Toggling it creates and
 	// destroys a compositing layer, which re-rasterises text and shows as a jump.
 	node.style.opacity = '0';
 	node.style.transform = `translate(${x}px, ${y}px)`;

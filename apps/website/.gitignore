@@ -8,7 +8,7 @@ node_modules
 /.svelte-kit
 /build
 
-# Heavy source footage masters — web-encoded derivatives live in static/media/
+# Heavy source footage masters. Web-encoded derivatives live in static/media/
 /media-src
 
 # Generated WASM codec package (build with `just web-wasm`)

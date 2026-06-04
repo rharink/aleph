@@ -1,83 +1,31 @@
 <script lang="ts">
+	import MailLink from './MailLink.svelte';
+
 	const year = new Date().getFullYear();
 </script>
 
-<footer class="footer">
-	<div class="container inner">
-		<div class="brand">
-			<img class="icon" src="/logo/aleph-icon-white.svg" alt="" />
-			<span>
-				<strong>Aleph</strong>
-				<span class="motto mono">You only lose ε.</span>
+<footer class="border-t border-line py-8 pt-12 text-ink-muted">
+	<div
+		class="mx-auto flex w-full max-w-[1140px] flex-wrap items-center justify-between gap-5 px-[clamp(20px,5vw,40px)]"
+	>
+		<div class="inline-flex items-start gap-1 flex-col">
+			<img class="block h-[26px] w-auto" src="/logo/aleph-logo-full-white.svg" alt="" />
+			<span class="">
+				<span class="font-mono text-ink-faint [font-feature-settings:normal] text-sm">
+					<span class="text-[0.6rem]">Smaller files.</span> Same footage.
+				</span>
 			</span>
 		</div>
-		<nav class="links" aria-label="Footer">
-			<a href="#features">Features</a>
-			<a href="#workflow">Workflow</a>
-			<a href="#top">Inspect a file</a>
+		<nav class="flex gap-6 text-[0.92rem] [&_a:hover]:text-ink" aria-label="Footer">
+			<a href="/compatibility">Compatibility</a>
+			<a href="/privacy">Privacy</a>
+			<MailLink label="Contact" />
 		</nav>
 	</div>
-	<div class="container legal label">
-		<span>© {year} Robert Harink</span>
-		<span>Proprietary · all rights reserved</span>
+	<div
+		class="mx-auto mt-8 flex w-full max-w-[1140px] flex-wrap justify-between gap-3 px-[clamp(20px,5vw,40px)] pt-6 text-[0.68rem]"
+	>
+		<span>© {year} <a class="hover:text-ink" href="https://functorware.studio">FunctorWare</a></span
+		>
 	</div>
 </footer>
-
-<style>
-	.footer {
-		border-top: 1px solid var(--line);
-		padding-block: 3rem 2rem;
-		color: var(--ink-muted);
-	}
-
-	.inner {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 1.2rem;
-		justify-content: space-between;
-		align-items: center;
-	}
-
-	.brand {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.7rem;
-	}
-
-	.icon {
-		height: 26px;
-		width: auto;
-		display: block;
-	}
-
-	.brand strong {
-		color: var(--ink);
-		margin-right: 0.6rem;
-	}
-
-	.motto {
-		font-size: 0.85rem;
-		color: var(--ink-faint);
-	}
-
-	.links {
-		display: flex;
-		gap: 1.4rem;
-		font-size: 0.92rem;
-	}
-
-	.links a:hover {
-		color: var(--ink);
-	}
-
-	.legal {
-		display: flex;
-		flex-wrap: wrap;
-		justify-content: space-between;
-		gap: 0.6rem;
-		margin-top: 2rem;
-		padding-top: 1.4rem;
-		border-top: 1px solid var(--line);
-		font-size: 0.68rem;
-	}
-</style>

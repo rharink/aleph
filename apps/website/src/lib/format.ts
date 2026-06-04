@@ -1,6 +1,6 @@
-// Decimal (SI) byte sizes — matches how camera/storage vendors quote capacity.
+// Decimal (SI) byte sizes, matching how camera/storage vendors quote capacity.
 export function formatBytes(bytes: number): string {
-	if (!Number.isFinite(bytes) || bytes < 0) return '—';
+	if (!Number.isFinite(bytes) || bytes < 0) return '-';
 	if (bytes < 1000) return `${bytes} B`;
 
 	const units = ['kB', 'MB', 'GB', 'TB', 'PB'];

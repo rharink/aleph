@@ -6,7 +6,7 @@
 			n: '01',
 			title: 'Compress',
 			cmd: 'aleph compress ./A001 --out ./A001.alz',
-			body: 'Lossless CinemaDNG in, smaller files out — with every metadata tag carried through.'
+			body: 'Lossless CinemaDNG in, smaller files out, with every metadata tag carried through.'
 		},
 		{
 			n: '02',
@@ -18,72 +18,33 @@
 			n: '03',
 			title: 'Offload',
 			cmd: 'aleph offload /CARD --to /RAID --to /BACKUP',
-			body: 'Write to two destinations at once, each confirmed with blake3. The card leaves verified.'
+			body: 'Write to two destinations at once, each confirmed with a checksum. The card leaves verified.'
 		}
 	];
 </script>
 
-<section id="workflow" class="section">
-	<div class="container">
-		<p class="label" use:reveal>On the set</p>
-		<h2 use:reveal={{ delay: 0.05 }}>Compress, verify, offload — one pass.</h2>
+<section id="workflow" class="border-t border-line py-[clamp(72px,11vw,132px)]">
+	<div class="mx-auto w-full max-w-[1140px] px-[clamp(20px,5vw,40px)]">
+		<h2 class="mt-3 max-w-[20ch] text-[clamp(1.9rem,4.2vw,2.9rem)]" use:reveal={{ delay: 0.05 }}>
+			Compress, verify, offload in one pass.
+		</h2>
 
-		<ol class="steps">
+		<ol
+			class="mt-[clamp(2.5rem,5vw,4rem)] grid list-none grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-[clamp(2rem,4vw,3.5rem)] p-0"
+		>
 			{#each steps as step, i (step.n)}
-				<li class="step" use:reveal={{ delay: 0.07 * i, y: 24 }}>
-					<span class="n mono">{step.n}</span>
-					<h3>{step.title}</h3>
-					<code class="cmd mono">{step.cmd}</code>
-					<p>{step.body}</p>
+				<li class="border-t border-ink pt-5" use:reveal={{ delay: 0.07 * i, y: 24 }}>
+					<span class="font-mono text-[0.78rem] text-ink-faint [font-feature-settings:normal]"
+						>{step.n}</span
+					>
+					<h3 class="mt-2 text-[1.4rem]">{step.title}</h3>
+					<code
+						class="mt-4 block break-all font-mono text-[0.8rem] text-ink-muted [font-feature-settings:normal]"
+						>{step.cmd}</code
+					>
+					<p class="mt-4 max-w-[36ch] text-[0.97rem] text-ink-muted">{step.body}</p>
 				</li>
 			{/each}
 		</ol>
 	</div>
 </section>
-
-<style>
-	h2 {
-		font-size: clamp(1.9rem, 4.2vw, 2.9rem);
-		margin-top: 0.7rem;
-		max-width: 20ch;
-	}
-
-	.steps {
-		list-style: none;
-		margin: clamp(2.5rem, 5vw, 4rem) 0 0;
-		padding: 0;
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-		gap: clamp(2rem, 4vw, 3.5rem);
-	}
-
-	.step {
-		border-top: 1px solid var(--ink);
-		padding-top: 1.2rem;
-	}
-
-	.n {
-		font-size: 0.78rem;
-		color: var(--ink-faint);
-	}
-
-	.step h3 {
-		font-size: 1.4rem;
-		margin-top: 0.6rem;
-	}
-
-	.cmd {
-		display: block;
-		margin-top: 1rem;
-		font-size: 0.8rem;
-		color: var(--ink-muted);
-		word-break: break-all;
-	}
-
-	.step p {
-		color: var(--ink-muted);
-		font-size: 0.97rem;
-		margin-top: 0.9rem;
-		max-width: 36ch;
-	}
-</style>

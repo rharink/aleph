@@ -85,7 +85,7 @@ export function parseTiff(buffer: ArrayBuffer): TiffInfo | null {
 		firstIfd = u32(4);
 	}
 
-	// Absolute offset of an entry's value bytes — inline when they fit in the
+	// Absolute offset of an entry's value bytes, inline when they fit in the
 	// value field, otherwise an out-of-line pointer.
 	const valueStart = (entry: number, type: number, count: number): number | null => {
 		const size = TYPE_SIZE[type];
