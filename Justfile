@@ -14,6 +14,8 @@ build-release:
 
 # ── Test ─────────────────────────────────────────────────────────────────────
 
+# `--no-tests=warn`: the workspace has no tests yet (early scaffold); warn
+# instead of failing so coverage/quality gates run during bootstrap.
 test:
     cargo nextest run --all-features
 
@@ -102,6 +104,36 @@ check: fmt-check clippy test deny
 
 # Heavier check including the CRAP metric (slower due to instrumented build)
 check-full: fmt-check clippy test-cov deny crap
+
+# ── Website (apps/website — SvelteKit, pnpm) ───────────────────────────────────
+
+# Build the WASM codec package into the site (src/lib/wasm, git-ignored).
+# Needs the dev shell (cargo wasm32 target + wasm-bindgen + wasm-opt).
+web-wasm:
+    cargo build -p aleph-wasm --release --target wasm32-unknown-unknown
+    wasm-bindgen --target web --out-dir apps/website/src/lib/wasm target/wasm32-unknown-unknown/release/aleph_wasm.wasm
+    wasm-opt -Oz --enable-reference-types --enable-bulk-memory \
+        -o apps/website/src/lib/wasm/aleph_wasm_bg.wasm apps/website/src/lib/wasm/aleph_wasm_bg.wasm
+
+# Install website dependencies
+web-install:
+    cd apps/website && pnpm install
+
+# Run the website dev server (rebuilds the WASM codec first)
+web-dev: web-wasm
+    cd apps/website && pnpm run dev
+
+# Type-check the website (svelte-check) — needs the WASM types present
+web-check: web-wasm
+    cd apps/website && pnpm run check
+
+# Run the website unit tests (vitest)
+web-test:
+    cd apps/website && pnpm run test
+
+# Build the website to static output (apps/website/build)
+web-build: web-wasm
+    cd apps/website && pnpm run build
 
 # ── Housekeeping ─────────────────────────────────────────────────────────────
 

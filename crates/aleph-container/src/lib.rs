@@ -4,6 +4,7 @@
 mod error;
 mod ifd;
 mod makernote;
+mod preview;
 mod read;
 mod tags;
 mod value;
@@ -16,6 +17,8 @@ pub use ifd::Ifd;
 pub use ifd::Image;
 pub use ifd::Layout;
 pub use ifd::PointerIfd;
+pub use preview::preview;
+pub use preview::Preview;
 pub use read::read;
 pub use read::read_file;
 pub use value::Endian;

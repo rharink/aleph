@@ -17,7 +17,7 @@ use crate::error::OrchestrationError;
 /// [`OrchestrationError::UnsupportedBitDepth`] for unsupported depths, or
 /// [`OrchestrationError::SegmentTooShort`] if `bytes` cannot supply
 /// `sample_count` samples.
-pub(crate) fn unpack(
+pub fn unpack(
     bytes: &[u8],
     precision: u8,
     endian: Endian,

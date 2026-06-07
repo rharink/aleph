@@ -80,26 +80,33 @@ aleph/
 ├── crates/
 │   ├── aleph-codec/            # lossless codec (no I/O, no metadata, no CLI)
 │   ├── aleph-container/        # DNG/TIFF container read/write (no codec logic)
+│   ├── aleph-develop/          # raw develop: demosaic + colour (DNG → display RGB)
 │   ├── aleph-metadata/         # tag preservation, round-trip verification
-│   └── aleph-orchestration/    # frame enumeration, rayon parallelism, checksums
+│   ├── aleph-orchestration/    # frame enumeration, rayon parallelism, checksums
+│   └── aleph-wasm/             # browser bindings: compress / decompress / preview / render
 ├── apps/
 │   ├── cli/                    # `aleph` binary — thin clap shell over orchestration
+│   ├── website/                # marketing/landing site (SvelteKit + Motion, static)
 │   └── gui/                    # future GUI (Tauri or egui, TBD)
 ├── benches/                    # workspace-level benchmarks (per-crate benches live in crates/)
 └── proof/                      # Lean 4 / Alloy formal specs
 ```
+
+`apps/website/` is a standalone SvelteKit app (pnpm, not a Cargo workspace member). It uses Motion (motion.dev) — the framework-agnostic engine behind Framer Motion — for animation, and builds to fully prerendered static output via `adapter-static`. Drive it with the `web-*` Just recipes or `pnpm` inside the directory.
 
 ## Architecture
 
 Dependencies flow strictly inward:
 
 ```
-apps/cli  ──►  aleph-orchestration  ──►  aleph-codec
-                                    ──►  aleph-container
-                                    ──►  aleph-metadata
+apps/cli     ──►  aleph-orchestration  ──►  aleph-codec
+                                       ──►  aleph-container
+                                       ──►  aleph-metadata
+aleph-wasm   ──►  aleph-orchestration, aleph-container, aleph-develop
+aleph-develop ──► aleph-container          # demosaic + colour only; no codec/orchestration
 ```
 
-No upward or sideways dependencies. `aleph-codec` must never import `aleph-container` or vice versa.
+No upward or sideways dependencies. `aleph-codec` must never import `aleph-container` or vice versa. `aleph-develop` stays codec/orchestration-free so v2 proxy generation (in orchestration) can reuse it without a cycle; the raw-sample `unpack` it needs is supplied by the caller (`aleph-orchestration::unpack`).
 
 Error handling: `thiserror` in library crates, `miette` (with `fancy` feature) in CLI/GUI apps.
 

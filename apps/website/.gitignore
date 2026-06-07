@@ -1,0 +1,29 @@
+node_modules
+
+# Output
+.output
+.vercel
+.netlify
+.wrangler
+/.svelte-kit
+/build
+
+# Heavy source footage masters. Web-encoded derivatives live in static/media/
+/media-src
+
+# Generated WASM codec package (build with `just web-wasm`)
+/src/lib/wasm
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.*
+!.env.example
+!.env.test
+
+# Vite
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*

@@ -55,6 +55,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "aleph-develop"
+version = "0.1.0"
+dependencies = [
+ "aleph-container",
+]
+
+[[package]]
 name = "aleph-metadata"
 version = "0.1.0"
 dependencies = [
@@ -81,6 +88,7 @@ name = "aleph-wasm"
 version = "0.1.0"
 dependencies = [
  "aleph-container",
+ "aleph-develop",
  "aleph-orchestration",
  "wasm-bindgen",
 ]

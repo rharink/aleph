@@ -1,0 +1,15 @@
+[package]
+name        = "aleph-develop"
+description = "Raw develop: demosaic + color pipeline (DNG → display RGB)"
+publish     = false
+version.workspace    = true
+edition.workspace    = true
+authors.workspace    = true
+license.workspace    = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+aleph-container = { workspace = true }
