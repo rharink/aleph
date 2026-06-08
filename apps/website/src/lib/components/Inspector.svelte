@@ -108,7 +108,8 @@
 			if (token === seq && rows) {
 				enter(rows.querySelectorAll('.row'), { y: 10, step: 0.05, duration: 0.45 });
 			}
-		} catch {
+		} catch (err) {
+			console.error('Inspector error:', err);
 			if (token === seq) view = { kind: 'error', message: 'Could not read that file.' };
 		}
 	}

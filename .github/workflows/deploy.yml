@@ -31,7 +31,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
 
       - name: Install wasm-opt (binaryen)
-        run: sudo apt-get install -y binaryen
+        run: npm install -g binaryen
 
       - name: Install wasm-bindgen-cli
         uses: taiki-e/install-action@v2
