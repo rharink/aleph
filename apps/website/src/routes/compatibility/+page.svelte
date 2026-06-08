@@ -81,7 +81,7 @@
 		<p class="text-ink-muted text-xs py-8 max-w-2xl">
 			“Sample wanted” means representative open DNG/CinemaDNG files can move a camera toward tested
 			support. “Demand signal” means the camera is popular, but its normal RAW format is proprietary
-			or recorder-specific and not a v1 support claim.
+			or recorder-specific and not a support claim.
 		</p>
 
 		<p class="mt-8 text-[0.9rem]">

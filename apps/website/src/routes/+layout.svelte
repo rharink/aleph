@@ -7,7 +7,7 @@
 
 	let { children } = $props();
 
-	const title = 'Aleph: near-lossless RAW compression';
+	const title = 'Aleph: lossless RAW compression';
 	const description =
 		'Fast, bit-perfect lossless compression for CinemaDNG and open-format RAW. Verified round-trips, dual-destination offload, built for the set.';
 </script>

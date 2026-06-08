@@ -35,7 +35,7 @@
 
 			<h2>What we collect</h2>
 			<p>
-				<strong>If you subscribe for updates.</strong> When you give us your email to hear about the v1
+				<strong>If you subscribe for updates.</strong> When you give us your email to hear about the Aleph
 				launch, that address is stored by Buttondown, our newsletter provider, and used only to send those
 				updates. You can unsubscribe from any email at any time. Buttondown's handling of your data is
 				covered by its own privacy policy.

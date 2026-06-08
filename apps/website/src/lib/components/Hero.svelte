@@ -21,15 +21,15 @@
 				data-enter
 			/>
 			<h1 class="mt-2 text-[clamp(2.8rem,8vw,5.6rem)] leading-[0.95]" data-enter>
-				Compression you can prove.
+				Smaller files. Same footage.
 			</h1>
 			<p
 				class="mt-6 max-w-[60ch] text-[clamp(1.05rem,2vw,1.2rem)] leading-[1.55] text-ink-muted"
 				data-enter
 			>
-				Aleph shrinks CinemaDNG and open-format RAW with bit-perfect, formally-verified round-trips.
-				Zoom into the footage below. The original and the decompressed frame are identical, to the
-				last bit.
+				Aleph makes CinemaDNG and open-format RAW smaller without changing a single sample, and
+				verifies every copy before you trust the card. Zoom into the footage below: it's the same
+				shot, before and after Aleph.
 			</p>
 			<div class="mt-8 flex flex-wrap justify-start gap-3" data-enter>
 				<Button href="#inspect">Try the inspector</Button>

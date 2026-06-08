@@ -5,8 +5,8 @@
 		{
 			n: '01',
 			title: 'Compress',
-			cmd: 'aleph compress ./A001 --out ./A001.alz',
-			body: 'Lossless CinemaDNG in, smaller files out, with every metadata tag carried through.'
+			cmd: 'aleph compress ./footage/A001 --out ./compressed/A001',
+			body: 'Lossless CinemaDNG in, the same DNG frames out — smaller, with every metadata tag carried through.'
 		},
 		{
 			n: '02',

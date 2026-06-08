@@ -1,6 +1,6 @@
 # Aleph ℵ
 
-> *You only lose ε.*
+> *Smaller files. Same footage.*
 
 Fast, near-lossless RAW compression for cinematographers and photographers. Lossless modes are bit-perfect — `decompress(compress(x)) == x`, provably.
 

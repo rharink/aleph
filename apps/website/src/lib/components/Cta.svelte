@@ -43,7 +43,7 @@
 		<p class="mt-5 max-w-[60ch] text-[clamp(1.05rem,2vw,1.2rem)] leading-[1.55] text-ink-muted">
 			A fast, buy-once alternative to subscription DIT tools, with machine-checked proof your
 			footage survives untouched. Aleph is in private development; leave your email and we'll tell
-			you the moment v1 ships.
+			you the moment Aleph ships.
 		</p>
 
 		{#if status === 'done'}

@@ -12,7 +12,7 @@
 			name: 'Windows',
 			status: 'Planned',
 			icon: 'windows',
-			body: 'Windows support is on the roadmap after the macOS release, with the same lossless guarantees.'
+			body: 'Windows support is on the roadmap after the macOS release, with the same bit-perfect results.'
 		}
 	];
 </script>

@@ -63,7 +63,7 @@
 								<strong
 									class="block text-[clamp(2rem,4vw,2.8rem)] leading-none tracking-[-0.04em] text-ink"
 									>{testedCount}</strong
-								> Tested camera
+								> Tested camera{testedCount === 1 ? '' : 's'}
 							</p>
 						</div>
 						<div class=" pt-3">

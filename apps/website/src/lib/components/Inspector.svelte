@@ -194,7 +194,7 @@
 <section id="inspect" class="border-t border-line py-[clamp(72px,11vw,132px)]">
 	<div class="mx-auto w-full max-w-[1140px] px-[clamp(20px,5vw,40px)]">
 		<h2 class="mt-3 text-[clamp(1.9rem,4.2vw,2.9rem)]" use:reveal={{ delay: 0.05 }}>
-			Drop a frame, Compress it. <br /> Prove it's identical.
+			Drop a frame, compress it. <br /> Prove it's identical.
 		</h2>
 		<p
 			class="mt-4 max-w-[60ch] text-[clamp(1.05rem,2vw,1.2rem)] leading-[1.55] text-ink-muted"
